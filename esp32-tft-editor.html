@@ -10,7 +10,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Courier New', monospace;
             background: #1e1e1e;
@@ -20,7 +20,7 @@
             gap: 20px;
             height: 100vh;
         }
-        
+
         .left-panel {
             flex: 1;
             display: flex;
@@ -28,7 +28,7 @@
             gap: 10px;
             min-width: 400px;
         }
-        
+
         .right-panel {
             flex: 0 0 auto;
             display: flex;
@@ -36,26 +36,26 @@
             align-items: center;
             gap: 15px;
         }
-        
+
         h1 {
             color: #4ec9b0;
             font-size: 18px;
             margin-bottom: 10px;
         }
-        
+
         #canvas {
             border: 3px solid #4ec9b0;
             background: #000;
             image-rendering: pixelated;
             box-shadow: 0 0 20px rgba(78, 201, 176, 0.3);
         }
-        
+
         .display-info {
             color: #608b4e;
             font-size: 12px;
             text-align: center;
         }
-        
+
         #code {
             width: 100%;
             flex: 1;
@@ -69,17 +69,17 @@
             outline: none;
             border-radius: 4px;
         }
-        
+
         #code:focus {
             border-color: #4ec9b0;
         }
-        
+
         .toolbar {
             display: flex;
             gap: 10px;
             align-items: center;
         }
-        
+
         button {
             background: #0e639c;
             color: white;
@@ -90,23 +90,23 @@
             font-family: inherit;
             font-size: 12px;
         }
-        
+
         button:hover {
             background: #1177bb;
         }
-        
+
         button:active {
             background: #0d5a8f;
         }
-        
+
         button.stop {
             background: #c72e0f;
         }
-        
+
         button.stop:hover {
             background: #e03e1f;
         }
-        
+
         .error {
             background: #3c1f1f;
             border-left: 3px solid #f48771;
@@ -117,11 +117,11 @@
             max-height: 150px;
             overflow-y: auto;
         }
-        
+
         .error:empty {
             display: none;
         }
-        
+
         .status {
             color: #4ec9b0;
             font-size: 11px;
@@ -129,9 +129,9 @@
     </style>
 </head>
 <body>
-    <div class="left-panel">
-        <h1>📝 C++ Code Editor</h1>
-        <textarea id="code" spellcheck="false">// Beispiel Code - probiere es aus!
+<div class="left-panel">
+    <h1>📝 C++ Code Editor</h1>
+    <textarea id="code" spellcheck="false">// Beispiel Code - probiere es aus!
 tft->fillScreen(0x0821);
 
 // Header Box
@@ -167,382 +167,432 @@ tft->print("~");
 tft->setTextColor(0xFFFF);
 tft->setCursor(261, 37);
 tft->print("433.92");</textarea>
-        
-        <div class="toolbar">
-            <button id="runBtn" onclick="executeCode()">▶ Run Code</button>
-            <button id="stopBtn" class="stop" onclick="stopExecution()" style="display:none">⬛ Stop</button>
-            <button onclick="clearDisplay()">🗑 Clear Display</button>
-            <button onclick="loadExample()">📋 Load Example</button>
-            <label style="margin-left: 20px; color: #608b4e;">
-                <input type="checkbox" id="bruceMode" onchange="updateExampleCode()" style="margin-right: 5px;">
-                Use Bruce API (display)
-            </label>
-            <span class="status" id="status"></span>
-        </div>
-        
-        <div id="error" class="error"></div>
-    </div>
-    
-    <div class="right-panel">
-        <h1>📺 TFT Display Preview</h1>
-        <canvas id="canvas" width="320" height="160"></canvas>
-        <div class="display-info">
-            <span id="displaySize">320 x 160 pixels</span> | ESP32 TFT Simulation
-        </div>
-        <div style="margin-top: 10px;">
-            <label for="sizeSelect" style="color: #608b4e; margin-right: 10px;">Display Size:</label>
-            <select id="sizeSelect" onchange="changeDisplaySize()" style="background: #252526; color: #d4d4d4; border: 1px solid #3e3e42; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
-                <option value="320x160" selected>320 x 160 (ST7789 1.9")</option>
-                <option value="240x240">240 x 240 (ST7789 1.3" Square)</option>
-                <option value="240x320">240 x 320 (ILI9341 2.4")</option>
-                <option value="320x240">320 x 240 (ILI9341 2.8" Landscape)</option>
-                <option value="480x320">480 x 320 (ILI9486 3.5")</option>
-                <option value="128x160">128 x 160 (ST7735 1.8")</option>
-                <option value="128x128">128 x 128 (ST7735 1.44" Square)</option>
-            </select>
-        </div>
+
+    <div class="toolbar">
+        <button id="runBtn" onclick="executeCode()">▶ Run Code</button>
+        <button id="stopBtn" class="stop" onclick="stopExecution()" style="display:none">⬛ Stop</button>
+        <button onclick="clearDisplay()">🗑 Clear Display</button>
+        <button onclick="loadExample()">📋 Load Example</button>
+        <label style="margin-left: 20px; color: #608b4e;">
+            <input type="checkbox" id="bruceMode" onchange="updateExampleCode()" style="margin-right: 5px;">
+            Use Bruce API (display)
+        </label>
+        <span class="status" id="status"></span>
     </div>
 
-    <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const codeEditor = document.getElementById('code');
-        const errorDiv = document.getElementById('error');
-        const statusDiv = document.getElementById('status');
-        const runBtn = document.getElementById('runBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const sizeSelect = document.getElementById('sizeSelect');
-        const displaySizeText = document.getElementById('displaySize');
-        
-        let executionStopped = false;
-        
-        // ST77XX Color Constants
-        const ST77XX_BLACK = 0x0000;
-        const ST77XX_WHITE = 0xFFFF;
-        const ST77XX_RED = 0xF800;
-        const ST77XX_GREEN = 0x07E0;
-        const ST77XX_BLUE = 0x001F;
-        const ST77XX_CYAN = 0x07FF;
-        const ST77XX_MAGENTA = 0xF81F;
-        const ST77XX_YELLOW = 0xFFE0;
-        const ST77XX_ORANGE = 0xFC00;
-        
-        // Convert RGB565 to RGB
-        function rgb565ToRgb(color) {
-            const r = ((color >> 11) & 0x1F) * 255 / 31;
-            const g = ((color >> 5) & 0x3F) * 255 / 63;
-            const b = (color & 0x1F) * 255 / 31;
-            return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+    <div id="error" class="error"></div>
+</div>
+
+<div class="right-panel">
+    <h1>📺 TFT Display Preview</h1>
+    <canvas id="canvas" width="320" height="160"></canvas>
+    <div class="display-info">
+        <span id="displaySize">320 x 160 pixels</span> | ESP32 TFT Simulation
+    </div>
+    <div style="margin-top: 10px;">
+        <label for="sizeSelect" style="color: #608b4e; margin-right: 10px;">Display Size:</label>
+        <select id="sizeSelect" onchange="changeDisplaySize()" style="background: #252526; color: #d4d4d4; border: 1px solid #3e3e42; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+            <option value="320x160" selected>320 x 160 (ST7789 1.9")</option>
+            <option value="240x240">240 x 240 (ST7789 1.3" Square)</option>
+            <option value="240x320">240 x 320 (ILI9341 2.4")</option>
+            <option value="320x240">320 x 240 (ILI9341 2.8" Landscape)</option>
+            <option value="480x320">480 x 320 (ILI9486 3.5")</option>
+            <option value="128x160">128 x 160 (ST7735 1.8")</option>
+            <option value="128x128">128 x 128 (ST7735 1.44" Square)</option>
+        </select>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const codeEditor = document.getElementById('code');
+    const errorDiv = document.getElementById('error');
+    const statusDiv = document.getElementById('status');
+    const runBtn = document.getElementById('runBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const sizeSelect = document.getElementById('sizeSelect');
+    const displaySizeText = document.getElementById('displaySize');
+
+    let executionStopped = false;
+
+    // ST77XX Color Constants
+    const ST77XX_BLACK = 0x0000;
+    const ST77XX_WHITE = 0xFFFF;
+    const ST77XX_RED = 0xF800;
+    const ST77XX_GREEN = 0x07E0;
+    const ST77XX_BLUE = 0x001F;
+    const ST77XX_CYAN = 0x07FF;
+    const ST77XX_MAGENTA = 0xF81F;
+    const ST77XX_YELLOW = 0xFFE0;
+    const ST77XX_ORANGE = 0xFC00;
+
+    // Convert RGB565 to RGB
+    function rgb565ToRgb(color) {
+        const r = ((color >> 11) & 0x1F) * 255 / 31;
+        const g = ((color >> 5) & 0x3F) * 255 / 63;
+        const b = (color & 0x1F) * 255 / 31;
+        return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+    }
+
+    // TFT Wrapper Class
+    class TFT {
+        constructor(ctx) {
+            this.ctx = ctx;
+            this.textColor = ST77XX_WHITE;
+            this.textSize = 1;
+            this.cursorX = 0;
+            this.cursorY = 0;
+            this.width = 320;
+            this.height = 160;
         }
-        
-        // TFT Wrapper Class
-        class TFT {
-            constructor(ctx) {
-                this.ctx = ctx;
-                this.textColor = ST77XX_WHITE;
-                this.textSize = 1;
-                this.cursorX = 0;
-                this.cursorY = 0;
-                this.width = 320;
-                this.height = 160;
+
+        fillScreen(color) {
+            this.ctx.fillStyle = rgb565ToRgb(color);
+            this.ctx.fillRect(0, 0, this.width, this.height);
+        }
+
+        fill(color) {
+            this.fillScreen(color);
+        }
+
+        fillRect(x, y, w, h, color) {
+            this.ctx.fillStyle = rgb565ToRgb(color);
+            this.ctx.fillRect(x, y, w, h);
+        }
+
+        drawRect(x, y, w, h, color) {
+            this.ctx.strokeStyle = rgb565ToRgb(color);
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+        }
+
+        fillRoundRect(x, y, w, h, r, color) {
+            this.ctx.fillStyle = rgb565ToRgb(color);
+            this.ctx.beginPath();
+            this.ctx.roundRect(x, y, w, h, r);
+            this.ctx.fill();
+        }
+
+        drawRoundRect(x, y, w, h, r, color) {
+            this.ctx.strokeStyle = rgb565ToRgb(color);
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, r);
+            this.ctx.stroke();
+        }
+
+        drawFillRect(x, y, w, h, color) {
+            this.fillRect(x, y, w, h, color);
+        }
+
+        drawFillRoundRect(x, y, w, h, r, color) {
+            this.fillRoundRect(x, y, w, h, r, color);
+        }
+
+        fillCircle(x, y, radius, color) {
+            this.ctx.fillStyle = rgb565ToRgb(color);
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+
+        drawCircle(x, y, radius, color) {
+            this.ctx.strokeStyle = rgb565ToRgb(color);
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+        }
+
+        drawFillCircle(x, y, radius, color) {
+            this.fillCircle(x, y, radius, color);
+        }
+
+        drawLine(x0, y0, x1, y1, color) {
+            this.ctx.strokeStyle = rgb565ToRgb(color);
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x0, y0);
+            this.ctx.lineTo(x1, y1);
+            this.ctx.stroke();
+        }
+
+        drawPixel(x, y, color) {
+            this.ctx.fillStyle = rgb565ToRgb(color);
+            this.ctx.fillRect(x, y, 1, 1);
+        }
+
+        setTextColor(color) {
+            this.textColor = color;
+        }
+
+        setTextSize(size) {
+            this.textSize = size;
+        }
+
+        setTextAlign(align, baseline) {
+            // align: 0/left - left, 1/center - center, 2/right - right
+            // baseline: 0/top - top, 1/middle - middle, 2/bottom - bottom, 3/alphabetic - alphabetic
+
+            // Parse align
+            if (typeof align === 'string') {
+                if (align[0] === 'l') align = 0;
+                else if (align[0] === 'c') align = 1;
+                else if (align[0] === 'r') align = 2;
             }
-            
-            fillScreen(color) {
-                this.ctx.fillStyle = rgb565ToRgb(color);
-                this.ctx.fillRect(0, 0, this.width, this.height);
+
+            // Parse baseline (default: 0/top)
+            if (baseline === undefined) baseline = 0;
+            if (typeof baseline === 'string') {
+                if (baseline[0] === 't') baseline = 0;
+                else if (baseline[0] === 'm') baseline = 1;
+                else if (baseline[0] === 'b') baseline = 2;
+                else if (baseline[0] === 'a') baseline = 3;
             }
-            
-            fill(color) {
-                this.fillScreen(color);
-            }
-            
-            fillRect(x, y, w, h, color) {
-                this.ctx.fillStyle = rgb565ToRgb(color);
-                this.ctx.fillRect(x, y, w, h);
-            }
-            
-            drawRect(x, y, w, h, color) {
-                this.ctx.strokeStyle = rgb565ToRgb(color);
-                this.ctx.lineWidth = 1;
-                this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-            }
-            
-            fillRoundRect(x, y, w, h, r, color) {
-                this.ctx.fillStyle = rgb565ToRgb(color);
-                this.ctx.beginPath();
-                this.ctx.roundRect(x, y, w, h, r);
-                this.ctx.fill();
-            }
-            
-            drawRoundRect(x, y, w, h, r, color) {
-                this.ctx.strokeStyle = rgb565ToRgb(color);
-                this.ctx.lineWidth = 1;
-                this.ctx.beginPath();
-                this.ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, r);
-                this.ctx.stroke();
-            }
-            
-            drawFillRect(x, y, w, h, color) {
-                this.fillRect(x, y, w, h, color);
-            }
-            
-            drawFillRoundRect(x, y, w, h, r, color) {
-                this.fillRoundRect(x, y, w, h, r, color);
-            }
-            
-            fillCircle(x, y, radius, color) {
-                this.ctx.fillStyle = rgb565ToRgb(color);
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, radius, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
-            
-            drawCircle(x, y, radius, color) {
-                this.ctx.strokeStyle = rgb565ToRgb(color);
-                this.ctx.lineWidth = 1;
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, radius, 0, Math.PI * 2);
-                this.ctx.stroke();
-            }
-            
-            drawFillCircle(x, y, radius, color) {
-                this.fillCircle(x, y, radius, color);
-            }
-            
-            drawLine(x0, y0, x1, y1, color) {
-                this.ctx.strokeStyle = rgb565ToRgb(color);
-                this.ctx.lineWidth = 1;
-                this.ctx.beginPath();
-                this.ctx.moveTo(x0, y0);
-                this.ctx.lineTo(x1, y1);
-                this.ctx.stroke();
-            }
-            
-            drawPixel(x, y, color) {
-                this.ctx.fillStyle = rgb565ToRgb(color);
-                this.ctx.fillRect(x, y, 1, 1);
-            }
-            
-            setTextColor(color) {
-                this.textColor = color;
-            }
-            
-            setTextSize(size) {
-                this.textSize = size;
-            }
-            
-            setCursor(x, y) {
-                this.cursorX = x;
-                this.cursorY = y;
-            }
-            
-            print(text) {
-                // Adafruit GFX Font: 5x8 pixels per character (6x8 with spacing)
-                const charWidth = 6 * this.textSize;
-                const charHeight = 8 * this.textSize;
-                
-                this.ctx.font = `bold ${charHeight}px monospace`;
-                this.ctx.fillStyle = rgb565ToRgb(this.textColor);
+
+            // Store text datum (0-11 like TFT_eSPI)
+            this.textDatum = align + baseline * 3;
+
+            // Set canvas text align
+            if (align === 0) this.ctx.textAlign = 'left';
+            else if (align === 1) this.ctx.textAlign = 'center';
+            else if (align === 2) this.ctx.textAlign = 'right';
+
+            // Set canvas text baseline
+            if (baseline === 0) this.ctx.textBaseline = 'top';
+            else if (baseline === 1) this.ctx.textBaseline = 'middle';
+            else if (baseline === 2) this.ctx.textBaseline = 'bottom';
+            else if (baseline === 3) this.ctx.textBaseline = 'alphabetic';
+        }
+
+        setCursor(x, y) {
+            this.cursorX = x;
+            this.cursorY = y;
+        }
+
+        print(text) {
+            // Adafruit GFX Font: 5x8 pixels per character (6x8 with spacing)
+            const charWidth = 6 * this.textSize;
+            const charHeight = 8 * this.textSize;
+
+            this.ctx.font = `bold ${charHeight}px monospace`;
+            this.ctx.fillStyle = rgb565ToRgb(this.textColor);
+
+            // Use stored textAlign and textBaseline if set, otherwise default to top-left
+            if (this.textDatum !== undefined) {
+                // textAlign and textBaseline already set by setTextAlign
+            } else {
+                this.ctx.textAlign = 'left';
                 this.ctx.textBaseline = 'top';
-                
-                const str = String(text);
-                
-                // Draw each character with fixed width spacing (like Adafruit GFX)
+            }
+
+            const str = String(text);
+
+            // If using default left-aligned, draw character by character for fixed width
+            if (this.ctx.textAlign === 'left' && this.textDatum === undefined) {
                 for (let i = 0; i < str.length; i++) {
                     this.ctx.fillText(str[i], this.cursorX, this.cursorY);
                     this.cursorX += charWidth;
                 }
-            }
-            
-            println(text) {
-                this.print(text);
-                this.cursorY += 8 * this.textSize;
-                this.cursorX = 0;
-            }
-            
-            printf(format, ...args) {
-                let result = format;
-                let argIndex = 0;
-                
-                result = result.replace(/%([0-9]*)([dxX]|[0-9]*l[xX])/g, (match, width, type) => {
-                    if (argIndex >= args.length) return match;
-                    const value = args[argIndex++];
-                    
-                    if (type === 'd') {
-                        return String(value).padStart(parseInt(width) || 0, '0');
-                    } else if (type === 'x' || type === 'X' || type.includes('lx') || type.includes('lX')) {
-                        let hex = Number(value).toString(16);
-                        if (type === 'X' || type.includes('X')) hex = hex.toUpperCase();
-                        const padWidth = parseInt(width) || 0;
-                        return hex.padStart(padWidth, '0');
-                    }
-                    return match;
-                });
-                
-                this.print(result);
-            }
-            
-            // Bruce API: color conversion
-            color(r, g, b) {
-                // Convert RGB888 to RGB565
-                const r5 = (r >> 3) & 0x1F;
-                const g6 = (g >> 2) & 0x3F;
-                const b5 = (b >> 3) & 0x1F;
-                return (r5 << 11) | (g6 << 5) | b5;
-            }
-            
-            // Bruce API aliases
-            drawText(text, x, y) {
-                const oldX = this.cursorX;
-                const oldY = this.cursorY;
-                this.setCursor(x, y);
-                this.print(text);
-                this.cursorX = oldX;
-                this.cursorY = oldY;
-            }
-            
-            drawString(text, x, y) {
-                this.drawText(text, x, y);
+            } else {
+                // For center/right alignment, draw the whole string at once
+                this.ctx.fillText(str, this.cursorX, this.cursorY);
+                if (this.ctx.textAlign === 'left') {
+                    this.cursorX += str.length * charWidth;
+                }
             }
         }
-        
-        // Global TFT instance (as pointer)
-        const tft = new TFT(ctx);
-        
-        // Bruce API: display object (alias to tft)
-        const display = tft;
-        
-        // Delay functions
-        function delay(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+
+        println(text) {
+            this.print(text);
+            this.cursorY += 8 * this.textSize;
+            this.cursorX = 0;
         }
-        
-        function delayMicroseconds(us) {
-            return new Promise(resolve => setTimeout(resolve, us / 1000));
-        }
-        
-        // C++ to JavaScript transpiler
-        function transpileCppToJs(code) {
-            let jsCode = code;
-            
-            // Replace tft-> with tft.
-            jsCode = jsCode.replace(/tft->/g, 'tft.');
-            
-            // Replace display. (Bruce API) - keep as is (already correct)
-            // jsCode = jsCode.replace(/display\./g, 'display.');
-            
-            // Handle require('display') for Bruce API
-            jsCode = jsCode.replace(/var\s+display\s*=\s*require\s*\(\s*["']display["']\s*\)\s*;?/g, '// display already available');
-            jsCode = jsCode.replace(/const\s+display\s*=\s*require\s*\(\s*["']display["']\s*\)\s*;?/g, '// display already available');
-            
-            // Replace uint8_t, uint16_t, uint32_t, int16_t etc. with let
-            jsCode = jsCode.replace(/\b(uint8_t|uint16_t|uint32_t|int8_t|int16_t|int32_t)\s+/g, 'let ');
-            
-            // Replace size_t with let
-            jsCode = jsCode.replace(/\bsize_t\s+/g, 'let ');
-            
-            // Replace char arrays with let
-            jsCode = jsCode.replace(/\bchar\s+(\w+)\[.*?\]/g, 'let $1');
-            
-            // Replace sprintf with template literals (simplified)
-            jsCode = jsCode.replace(/sprintf\s*\(\s*(\w+)\s*,\s*"(.+?)"\s*,\s*(.+?)\s*\)/g, (match, var1, format, args) => {
-                // Simple sprintf replacement
-                let replacement = format;
-                const argList = args.split(',').map(a => a.trim());
-                let argIndex = 0;
-                
-                replacement = replacement.replace(/%([0-9]*)([dxX]|05[xX]|05l[xX])/g, (m, width, type) => {
-                    if (argIndex >= argList.length) return m;
-                    const arg = argList[argIndex++];
-                    
-                    if (type === 'd') {
-                        return '${' + arg + '}';
-                    } else if (type.includes('x') || type.includes('X')) {
-                        let hex = '${' + arg + '.toString(16)';
-                        if (width) hex += '.padStart(' + width + ', "0")';
-                        if (type.includes('X')) hex += '.toUpperCase()';
-                        return hex + '}';
-                    }
-                    return m;
-                });
-                
-                return `${var1} = \`${replacement}\``;
+
+        printf(format, ...args) {
+            let result = format;
+            let argIndex = 0;
+
+            result = result.replace(/%([0-9]*)([dxX]|[0-9]*l[xX])/g, (match, width, type) => {
+                if (argIndex >= args.length) return match;
+                const value = args[argIndex++];
+
+                if (type === 'd') {
+                    return String(value).padStart(parseInt(width) || 0, '0');
+                } else if (type === 'x' || type === 'X' || type.includes('lx') || type.includes('lX')) {
+                    let hex = Number(value).toString(16);
+                    if (type === 'X' || type.includes('X')) hex = hex.toUpperCase();
+                    const padWidth = parseInt(width) || 0;
+                    return hex.padStart(padWidth, '0');
+                }
+                return match;
             });
-            
-            // Replace strlen with .length
-            jsCode = jsCode.replace(/strlen\s*\(\s*(\w+)\s*\)/g, '$1.length');
-            
-            // Make delay async
-            jsCode = jsCode.replace(/\bdelay\s*\(/g, 'await delay(');
-            jsCode = jsCode.replace(/\bdelayMicroseconds\s*\(/g, 'await delayMicroseconds(');
-            
-            return jsCode;
+
+            this.print(result);
         }
-        
-        // Auto-execute on code change
-        let timeout;
-        codeEditor.addEventListener('input', () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(executeCode, 800);
+
+        // Bruce API: color conversion
+        color(r, g, b) {
+            // Convert RGB888 to RGB565
+            const r5 = (r >> 3) & 0x1F;
+            const g6 = (g >> 2) & 0x3F;
+            const b5 = (b >> 3) & 0x1F;
+            return (r5 << 11) | (g6 << 5) | b5;
+        }
+
+        // Bruce API aliases
+        drawText(text, x, y) {
+            const oldX = this.cursorX;
+            const oldY = this.cursorY;
+            this.setCursor(x, y);
+            this.print(text);
+            this.cursorX = oldX;
+            this.cursorY = oldY;
+        }
+
+        drawString(text, x, y) {
+            this.drawText(text, x, y);
+        }
+    }
+
+    // Global TFT instance (as pointer)
+    const tft = new TFT(ctx);
+
+    // Bruce API: display object (alias to tft)
+    const display = tft;
+
+    // Delay functions
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function delayMicroseconds(us) {
+        return new Promise(resolve => setTimeout(resolve, us / 1000));
+    }
+
+    // C++ to JavaScript transpiler
+    function transpileCppToJs(code) {
+        let jsCode = code;
+
+        // Replace tft-> with tft.
+        jsCode = jsCode.replace(/tft->/g, 'tft.');
+
+        // Replace display. (Bruce API) - keep as is (already correct)
+        // jsCode = jsCode.replace(/display\./g, 'display.');
+
+        // Handle require('display') for Bruce API
+        jsCode = jsCode.replace(/var\s+display\s*=\s*require\s*\(\s*["']display["']\s*\)\s*;?/g, '// display already available');
+        jsCode = jsCode.replace(/const\s+display\s*=\s*require\s*\(\s*["']display["']\s*\)\s*;?/g, '// display already available');
+
+        // Replace uint8_t, uint16_t, uint32_t, int16_t etc. with let
+        jsCode = jsCode.replace(/\b(uint8_t|uint16_t|uint32_t|int8_t|int16_t|int32_t)\s+/g, 'let ');
+
+        // Replace size_t with let
+        jsCode = jsCode.replace(/\bsize_t\s+/g, 'let ');
+
+        // Replace char arrays with let
+        jsCode = jsCode.replace(/\bchar\s+(\w+)\[.*?\]/g, 'let $1');
+
+        // Replace sprintf with template literals (simplified)
+        jsCode = jsCode.replace(/sprintf\s*\(\s*(\w+)\s*,\s*"(.+?)"\s*,\s*(.+?)\s*\)/g, (match, var1, format, args) => {
+            // Simple sprintf replacement
+            let replacement = format;
+            const argList = args.split(',').map(a => a.trim());
+            let argIndex = 0;
+
+            replacement = replacement.replace(/%([0-9]*)([dxX]|05[xX]|05l[xX])/g, (m, width, type) => {
+                if (argIndex >= argList.length) return m;
+                const arg = argList[argIndex++];
+
+                if (type === 'd') {
+                    return '${' + arg + '}';
+                } else if (type.includes('x') || type.includes('X')) {
+                    let hex = '${' + arg + '.toString(16)';
+                    if (width) hex += '.padStart(' + width + ', "0")';
+                    if (type.includes('X')) hex += '.toUpperCase()';
+                    return hex + '}';
+                }
+                return m;
+            });
+
+            return `${var1} = \`${replacement}\``;
         });
-        
-        async function executeCode() {
-            try {
-                executionStopped = false;
-                runBtn.style.display = 'none';
-                stopBtn.style.display = 'inline-block';
-                statusDiv.textContent = '▶ Running...';
-                errorDiv.textContent = '';
-                tft.fillScreen(ST77XX_BLACK);
-                
-                // Transpile C++ to JavaScript
-                const jsCode = transpileCppToJs(codeEditor.value);
-                
-                // Execute as async function
-                const asyncFunc = new Function('tft', 'display', 'delay', 'delayMicroseconds', 'ST77XX_BLACK', 'ST77XX_WHITE', 'ST77XX_RED', 'ST77XX_GREEN', 'ST77XX_BLUE', 'ST77XX_CYAN', 'ST77XX_MAGENTA', 'ST77XX_YELLOW', 'ST77XX_ORANGE', 
-                    `return (async () => {
+
+        // Replace strlen with .length
+        jsCode = jsCode.replace(/strlen\s*\(\s*(\w+)\s*\)/g, '$1.length');
+
+        // Make delay async
+        jsCode = jsCode.replace(/\bdelay\s*\(/g, 'await delay(');
+        jsCode = jsCode.replace(/\bdelayMicroseconds\s*\(/g, 'await delayMicroseconds(');
+
+        return jsCode;
+    }
+
+    // Auto-execute on code change
+    let timeout;
+    codeEditor.addEventListener('input', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(executeCode, 800);
+    });
+
+    async function executeCode() {
+        try {
+            executionStopped = false;
+            runBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+            statusDiv.textContent = '▶ Running...';
+            errorDiv.textContent = '';
+            tft.fillScreen(ST77XX_BLACK);
+
+            // Transpile C++ to JavaScript
+            const jsCode = transpileCppToJs(codeEditor.value);
+
+            // Execute as async function
+            const asyncFunc = new Function('tft', 'display', 'delay', 'delayMicroseconds', 'ST77XX_BLACK', 'ST77XX_WHITE', 'ST77XX_RED', 'ST77XX_GREEN', 'ST77XX_BLUE', 'ST77XX_CYAN', 'ST77XX_MAGENTA', 'ST77XX_YELLOW', 'ST77XX_ORANGE',
+                `return (async () => {
                         ${jsCode}
                     })();`
-                );
-                
-                await asyncFunc(tft, display, delay, delayMicroseconds, ST77XX_BLACK, ST77XX_WHITE, ST77XX_RED, ST77XX_GREEN, ST77XX_BLUE, ST77XX_CYAN, ST77XX_MAGENTA, ST77XX_YELLOW, ST77XX_ORANGE);
-                
-                if (!executionStopped) {
-                    statusDiv.textContent = '✓ Done';
-                }
-            } catch (error) {
-                errorDiv.textContent = `❌ Error: ${error.message}`;
-                statusDiv.textContent = '✗ Error';
-                console.error(error);
-            } finally {
-                runBtn.style.display = 'inline-block';
-                stopBtn.style.display = 'none';
+            );
+
+            await asyncFunc(tft, display, delay, delayMicroseconds, ST77XX_BLACK, ST77XX_WHITE, ST77XX_RED, ST77XX_GREEN, ST77XX_BLUE, ST77XX_CYAN, ST77XX_MAGENTA, ST77XX_YELLOW, ST77XX_ORANGE);
+
+            if (!executionStopped) {
+                statusDiv.textContent = '✓ Done';
             }
-        }
-        
-        function stopExecution() {
-            executionStopped = true;
-            statusDiv.textContent = '⬛ Stopped';
+        } catch (error) {
+            errorDiv.textContent = `❌ Error: ${error.message}`;
+            statusDiv.textContent = '✗ Error';
+            console.error(error);
+        } finally {
             runBtn.style.display = 'inline-block';
             stopBtn.style.display = 'none';
         }
-        
-        function clearDisplay() {
-            tft.fillScreen(ST77XX_BLACK);
-            errorDiv.textContent = '';
-            statusDiv.textContent = '';
-        }
-        
-        function loadExample() {
-            updateExampleCode();
-        }
-        
-        function updateExampleCode() {
-            const useBruceApi = document.getElementById('bruceMode').checked;
-            
-            if (useBruceApi) {
-                // Bruce API Example
-                codeEditor.value = `// Bruce Display API Example
+    }
+
+    function stopExecution() {
+        executionStopped = true;
+        statusDiv.textContent = '⬛ Stopped';
+        runBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'none';
+    }
+
+    function clearDisplay() {
+        tft.fillScreen(ST77XX_BLACK);
+        errorDiv.textContent = '';
+        statusDiv.textContent = '';
+    }
+
+    function loadExample() {
+        updateExampleCode();
+    }
+
+    function updateExampleCode() {
+        const useBruceApi = document.getElementById('bruceMode').checked;
+
+        if (useBruceApi) {
+            // Bruce API Example
+            codeEditor.value = `// Bruce Display API Example
 var display = require("display");
 
 var black = display.color(0, 0, 0);
@@ -598,9 +648,9 @@ display.fill(blue);
 display.setTextSize(3);
 display.setTextColor(green);
 display.drawText("READY!", 80, 60);`;
-            } else {
-                // TFT API Example (C++)
-                codeEditor.value = `// Sub-Sw0rd Bootscreen
+        } else {
+            // TFT API Example (C++)
+            codeEditor.value = `// Sub-Sw0rd Bootscreen
 tft->fillScreen(ST77XX_BLACK);
 
 // Grüner Hacker-Text
@@ -652,28 +702,28 @@ tft->setTextSize(3);
 tft->setTextColor(ST77XX_GREEN);
 tft->setCursor(80, 60);
 tft->print("READY!");`;
-            }
-            executeCode();
         }
-        
-        function changeDisplaySize() {
-            const size = sizeSelect.value;
-            const [width, height] = size.split('x').map(Number);
-            
-            canvas.width = width;
-            canvas.height = height;
-            displaySizeText.textContent = `${width} x ${height} pixels`;
-            
-            // Update TFT dimensions
-            tft.width = width;
-            tft.height = height;
-            
-            // Re-execute code with new size
-            executeCode();
-        }
-        
-        // Initial execution
         executeCode();
-    </script>
+    }
+
+    function changeDisplaySize() {
+        const size = sizeSelect.value;
+        const [width, height] = size.split('x').map(Number);
+
+        canvas.width = width;
+        canvas.height = height;
+        displaySizeText.textContent = `${width} x ${height} pixels`;
+
+        // Update TFT dimensions
+        tft.width = width;
+        tft.height = height;
+
+        // Re-execute code with new size
+        executeCode();
+    }
+
+    // Initial execution
+    executeCode();
+</script>
 </body>
 </html>
