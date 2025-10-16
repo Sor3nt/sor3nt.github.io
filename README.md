@@ -12,7 +12,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0a0a0a;
             min-height: 100vh;
             padding: 40px 20px;
         }
@@ -31,12 +31,17 @@
         h1 {
             font-size: 3em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .subtitle {
             font-size: 1.2em;
-            opacity: 0.9;
+            opacity: 0.7;
+            color: #b0b0b0;
         }
 
         .projects-grid {
@@ -47,17 +52,19 @@
         }
 
         .project-card {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
             border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
             cursor: pointer;
         }
 
         .project-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 15px 40px rgba(102,126,234,0.3);
+            border-color: #667eea;
         }
 
         .project-number {
@@ -75,12 +82,12 @@
 
         .project-title {
             font-size: 1.5em;
-            color: #333;
+            color: #e0e0e0;
             margin-bottom: 10px;
         }
 
         .project-description {
-            color: #666;
+            color: #a0a0a0;
             line-height: 1.6;
             margin-bottom: 20px;
         }
@@ -93,11 +100,12 @@
         }
 
         .tech-tag {
-            background: #f0f0f0;
+            background: #2a2a2a;
             padding: 5px 12px;
             border-radius: 15px;
             font-size: 0.85em;
-            color: #555;
+            color: #b0b0b0;
+            border: 1px solid #3a3a3a;
         }
 
         .project-links {
@@ -116,7 +124,7 @@
         }
 
         .project-link:hover {
-            color: #764ba2;
+            color: #8b9eff;
         }
 
         .project-link svg {
@@ -126,9 +134,9 @@
 
         footer {
             text-align: center;
-            color: white;
+            color: #b0b0b0;
             margin-top: 60px;
-            opacity: 0.8;
+            opacity: 0.6;
         }
 
         @media (max-width: 600px) {
@@ -145,8 +153,7 @@
 <body>
 <div class="container">
     <header>
-        <h1>Meine Projekte</h1>
-        <p class="subtitle">Eine Übersicht meiner Entwicklungsprojekte</p>
+        <h1>Projects</h1>
     </header>
 
     <div class="projects-grid">
