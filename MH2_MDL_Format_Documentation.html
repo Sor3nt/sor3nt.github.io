@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manhunt 2 MDL Format - Technical Specification</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Mono:wght@400;700&family=Crimson+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #151923;
+            --bg-tertiary: #1e2330;
+            --accent-primary: #00ff88;
+            --accent-secondary: #00ccff;
+            --text-primary: #e8eaed;
+            --text-secondary: #9ba3af;
+            --text-muted: #6b7280;
+            --border-color: #2d3748;
+            --code-bg: #0d1117;
+            --table-header: #1a2332;
+            --warning: #ff6b6b;
+            --info: #4dabf7;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Crimson Pro', Georgia, serif; background: var(--bg-primary); color: var(--text-primary); line-height: 1.7; font-size: 17px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+        header { background: linear-gradient(135deg, #0a0e17 0%, #1e2330 100%); border-bottom: 3px solid var(--accent-primary); padding: 4rem 0 3rem; margin-bottom: 3rem; position: relative; overflow: hidden; }
+        header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 136, 0.03) 2px, rgba(0, 255, 136, 0.03) 4px); pointer-events: none; }
+        header .container { position: relative; z-index: 1; }
+        h1 { font-family: 'JetBrains Mono', monospace; font-size: 3.5rem; font-weight: 700; color: var(--accent-primary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: -2px; text-shadow: 0 0 30px rgba(0, 255, 136, 0.3); }
+        .subtitle { font-family: 'Space Mono', monospace; font-size: 1.4rem; color: var(--text-secondary); margin-bottom: 1.5rem; letter-spacing: 2px; }
+        .meta-info { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-muted); border-left: 3px solid var(--accent-secondary); padding-left: 1rem; margin-top: 2rem; }
+        .toc { background: var(--bg-secondary); border: 1px solid var(--border-color); border-left: 4px solid var(--accent-primary); padding: 2rem; margin: 3rem 0; border-radius: 4px; }
+        .toc h2 { font-family: 'Space Mono', monospace; font-size: 1.5rem; color: var(--accent-primary); margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
+        .toc ul { list-style: none; }
+        .toc li { margin-bottom: 0.8rem; }
+        .toc a { color: var(--text-secondary); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; transition: all 0.2s ease; display: inline-block; }
+        .toc a:hover { color: var(--accent-primary); transform: translateX(5px); }
+        section { margin: 4rem 0; padding-top: 2rem; }
+        section h2 { font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; color: var(--accent-primary); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border-color); text-transform: uppercase; letter-spacing: -1px; }
+        section h3 { font-family: 'Space Mono', monospace; font-size: 1.6rem; color: var(--accent-secondary); margin: 2.5rem 0 1rem; font-weight: 700; }
+        section h4 { font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; color: var(--text-primary); margin: 2rem 0 1rem; font-weight: 600; }
+        p { margin-bottom: 1.2rem; color: var(--text-secondary); }
+        strong { color: var(--text-primary); font-weight: 600; }
+        em { color: var(--accent-secondary); font-style: italic; }
+        ul, ol { margin: 1rem 0 1.5rem 2rem; color: var(--text-secondary); }
+        li { margin-bottom: 0.6rem; }
+        code { font-family: 'JetBrains Mono', monospace; background: var(--code-bg); color: var(--accent-primary); padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.9em; border: 1px solid var(--border-color); }
+        pre { background: var(--code-bg); border: 1px solid var(--border-color); border-left: 4px solid var(--accent-secondary); padding: 1.5rem; margin: 1.5rem 0; overflow-x: auto; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.6; position: relative; }
+        pre code { background: none; border: none; padding: 0; color: var(--text-primary); }
+        .hex-example { background: #0d1117; border-left: 4px solid var(--warning); color: #00ff88; }
+        .hex-comment { color: var(--text-muted); }
+        .table-wrapper { overflow-x: auto; margin: 2rem 0; border: 1px solid var(--border-color); border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; }
+        thead { background: var(--table-header); }
+        th { padding: 1rem; text-align: left; font-weight: 700; color: var(--accent-primary); border-bottom: 2px solid var(--accent-primary); text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem; }
+        td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); vertical-align: top; }
+        tbody tr { background: var(--bg-secondary); transition: background 0.2s ease; }
+        tbody tr:hover { background: var(--bg-tertiary); }
+        td:first-child { color: var(--accent-secondary); font-weight: 600; }
+        .info-box { background: var(--bg-secondary); border-left: 4px solid var(--info); padding: 1.5rem; margin: 2rem 0; border-radius: 4px; }
+        .info-box.warning { border-left-color: var(--warning); }
+        .info-box.success { border-left-color: var(--accent-primary); }
+        .info-box-title { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--accent-primary); margin-bottom: 0.8rem; font-size: 1.1rem; }
+        .formula { background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 1rem; margin: 1.5rem 0; font-family: 'JetBrains Mono', monospace; text-align: center; font-size: 1.1rem; color: var(--accent-secondary); }
+        footer { background: var(--bg-secondary); border-top: 3px solid var(--accent-primary); padding: 2rem 0; margin-top: 5rem; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-muted); }
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 6px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .subtitle { font-size: 1.1rem; }
+            section h2 { font-size: 1.8rem; }
+            section h3 { font-size: 1.3rem; }
+            .container { padding: 0 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>MDL FORMAT</h1>
+            <div class="subtitle">Manhunt 2 Model Format Specification</div>
+            <div class="meta-info">
+                <div>Version 1.0 | Technical Documentation</div>
+                <div>For Reverse Engineering, Modding & Tool Development</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <nav class="toc">
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#overview">1. Overview & Introduction</a></li>
+                <li><a href="#file-structure">2. File Structure & Layout</a></li>
+                <li><a href="#header-entry">3. Header & Entry Index</a></li>
+                <li><a href="#entry-structure">4. Entry Structure</a></li>
+                <li><a href="#bone-system">5. Bone System</a></li>
+                <li><a href="#object-data">6. Object Data</a></li>
+                <li><a href="#vertex-formats">7. Vertex Formats</a></li>
+                <li><a href="#materials">8. Materials</a></li>
+                <li><a href="#animation">9. Animation</a></li>
+                <li><a href="#matrices">10. Matrices</a></li>
+                <li><a href="#examples">11. Examples</a></li>
+                <li><a href="#reference">12. Reference</a></li>
+            </ul>
+        </nav>
+
+        <!-- Overview Section -->
+        <section id="overview">
+            <h2>1. Overview & Introduction</h2>
+            <h3>1.1 Format Description</h3>
+            <p>The <strong>MDL format</strong> is a proprietary binary 3D model format used in <em>Manhunt 2</em> (Rockstar Games, 2007). This format stores complete 3D models including geometry, skeletal animation data, materials, textures, and skinning information.</p>
+            
+            <h3>1.2 Key Features</h3>
+            <ul>
+                <li>Hierarchical bone structure with parent-child relationships</li>
+                <li>Multiple vertex formats (skinned and non-skinned meshes)</li>
+                <li>Support for 1-4 bone influences per vertex</li>
+                <li>Multiple UV coordinate sets (up to 2 layers)</li>
+                <li>Per-vertex colors (RGBA)</li>
+                <li>Bounding volumes for culling</li>
+                <li>Packed normal format (16-bit signed integers)</li>
+            </ul>
+
+            <div class="info-box success">
+                <div class="info-box-title">IMPORTANT: Byte Order</div>
+                <p>The MDL format uses <strong>little-endian</strong> byte order throughout. All multi-byte values must be read with the least significant byte first.</p>
+            </div>
+        </section>
+
+        <!-- File Structure Section -->
+        <section id="file-structure">
+            <h2>2. File Structure & Layout</h2>
+            
+            <h3>2.1 High-Level Organization</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>0x00</td>
+                            <td>32 bytes</td>
+                            <td>Header</td>
+                            <td>File header (unknown purpose)</td>
+                        </tr>
+                        <tr>
+                            <td>0x20</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>First entry index offset</td>
+                        </tr>
+                        <tr>
+                            <td>Variable</td>
+                            <td>Variable</td>
+                            <td>Entries</td>
+                            <td>Model data, bones, geometry</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>2.2 Pointer System</h3>
+            <p>The format uses <strong>absolute file offsets</strong> for all pointers. A value of <code>0x00000000</code> indicates a NULL pointer.</p>
+
+            <div class="info-box warning">
+                <div class="info-box-title">⚠ Critical Implementation Note</div>
+                <p>Always save the current position before following a pointer!</p>
+            </div>
+        </section>
+
+        <!-- Chapter 3: Header & Entry Index -->
+        <section id="header-entry">
+            <h2>3. Header & Entry Index</h2>
+            
+            <h3>3.1 File Header</h3>
+            <p>The file begins with a <strong>32-byte header</strong> at offset <code>0x00</code>. The exact purpose is unknown, but may contain version info or magic numbers.</p>
+
+            <h4>Hex Example: File Start</h4>
+            <pre class="hex-example"><code>00000000: 4D 44 4C 00 01 00 00 00 00 00 00 00 00 00 00 00  <span class="hex-comment">MDL.............</span>
+00000010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  <span class="hex-comment">................</span>
+00000020: 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  <span class="hex-comment">@...............</span></code></pre>
+
+            <p>At offset <code>0x20</code>, the first entry index offset is stored:</p>
+            <pre><code>Offset 0x20: 40 00 00 00  = 0x00000040 (First Entry Index)</code></pre>
+
+            <h3>3.2 Entry Index Structure (12 bytes)</h3>
+            <p>Starting at the first entry index offset, a <strong>linked list of entries</strong> is defined. Each node is 12 bytes:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Next entry index offset (0x20 = end)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>4 bytes</td>
+                            <td>-</td>
+                            <td>Reserved/padding</td>
+                        </tr>
+                        <tr>
+                            <td>+0x08</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Entry data offset (ReadClump)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>Hex Example: Entry Index Node</h4>
+            <pre class="hex-example"><code>00000040: 20 00 00 00  <span class="hex-comment">Next = 0x20 (end of list)</span>
+00000044: 00 00 00 00  <span class="hex-comment">Padding</span>
+00000048: 60 00 00 00  <span class="hex-comment">Entry Offset = 0x00000060</span></code></pre>
+
+            <div class="info-box">
+                <div class="info-box-title">📝 Loop Termination</div>
+                <p>Iterate through entries until <code>nextEntryIndexOffset == 0x20</code>. This sentinel value indicates the end of the list.</p>
+            </div>
+
+            <h4>Entry Index Traversal Code</h4>
+            <pre><code>entryIndexOffset = readInt32AtOffset(0x20)
+entries = []
+
+do {
+    seekTo(entryIndexOffset)
+    nextOffset = readInt32()
+    skip(4)  // padding
+    entryDataOffset = readInt32()
+    
+    entries.append(entryDataOffset)
+    entryIndexOffset = nextOffset
+    
+} while (entryIndexOffset != 0x20)</code></pre>
+        </section>
+
+        <!-- Chapter 4: Entry Structure -->
+        <section id="entry-structure">
+            <h2>4. Entry Structure (ReadClump)</h2>
+            
+            <h3>4.1 Entry Header (36 bytes)</h3>
+            <p>Each entry begins with a header that links to the root bone and object data. This is referred to as <strong>'ParseEntry'</strong> in the loader code.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Root bone offset (skeleton start)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>16 bytes</td>
+                            <td>-</td>
+                            <td>Reserved/unknown</td>
+                        </tr>
+                        <tr>
+                            <td>+0x14</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Object info index offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x18</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>First object info offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x1C</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Last object info offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x20</td>
+                            <td>4 bytes</td>
+                            <td>-</td>
+                            <td>Reserved/padding</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>4.2 Model Name</h3>
+            <p>The model name is stored at <strong>root bone offset + 24 bytes</strong>. It's a NULL-terminated ASCII string (max 40 bytes).</p>
+
+            <div class="info-box">
+                <div class="info-box-title">💡 Common Model Names</div>
+                <p>Examples: <code>player</code>, <code>weapon_bat</code>, <code>cop_head</code>, <code>car_police</code>, <code>prop_door</code></p>
+            </div>
+
+            <h4>Hex Example: Entry Header with Model Name</h4>
+            <pre class="hex-example"><code>00000060: 80 00 00 00  <span class="hex-comment">Root Bone = 0x00000080</span>
+00000064: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  <span class="hex-comment">(Reserved)</span>
+00000074: A0 00 00 00  <span class="hex-comment">Object Info Index = 0x000000A0</span>
+00000078: C0 00 00 00  <span class="hex-comment">First Object Info = 0x000000C0</span>
+0000007C: C0 00 00 00  <span class="hex-comment">Last Object Info = 0x000000C0</span>
+
+<span class="hex-comment">At Root Bone + 24 (0x00000098):</span>
+00000098: 70 6C 61 79 65 72 5F 6D 6F 64 65 6C 00 00 00 00  <span class="hex-comment">player_model....</span></code></pre>
+
+            <h3>4.3 Parsing Workflow</h3>
+            <pre><code>// Step 1: Read entry header
+seekTo(entryDataOffset)
+rootBoneOffset = readInt32()
+skip(16)
+objectInfoIndexOffset = readInt32()
+firstObjectInfoOffset = readInt32()
+lastObjectInfoOffset = readInt32()
+
+// Step 2: Read model name
+seekTo(rootBoneOffset + 24)
+modelName = readNullTerminatedString(40)
+
+// Step 3: Parse skeleton
+seekTo(rootBoneOffset)
+skeleton = parseBoneHierarchy()
+
+// Step 4: Parse geometry
+objects = parseObjectList(firstObjectInfoOffset, objectInfoIndexOffset)</code></pre>
+        </section>
+
+        <!-- Chapter 5: Bone System -->
+        <section id="bone-system">
+            <h2>5. Bone System & Skeleton Hierarchy</h2>
+            
+            <h3>5.1 Bone Structure (176 bytes)</h3>
+            <p>Bones form a hierarchical skeleton using a tree structure. Each bone can have child bones (sub-bones) and sibling bones (brother bones).</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>4 bytes</td>
+                            <td>-</td>
+                            <td>Reserved</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Next brother bone offset (sibling)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x08</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Parent bone offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Root bone offset (back-reference)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x10</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Sub (child) bone offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x14</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Animation data index offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x18</td>
+                            <td>40 bytes</td>
+                            <td>char[]</td>
+                            <td>Bone name (NULL-terminated)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x40</td>
+                            <td>64 bytes</td>
+                            <td>float[16]</td>
+                            <td>Parent-child transform (4x4 matrix)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x80</td>
+                            <td>64 bytes</td>
+                            <td>float[16]</td>
+                            <td>World position matrix (4x4)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>5.2 Bone Hierarchy Parsing</h3>
+            <p>Parse the bone tree <strong>recursively</strong>: traverse child bones depth-first, then sibling bones breadth-wise.</p>
+
+            <h4>Recursive Bone Traversal</h4>
+            <pre><code>function ParseBone(offset):
+    seekTo(offset)
+    bone = readBoneStructure(176)
+    
+    // Parse children (depth-first)
+    if bone.subBoneOffset != 0:
+        bone.children = ParseBone(bone.subBoneOffset)
+    
+    // Parse siblings (breadth-wise)
+    if bone.nextBrotherBoneOffset != 0:
+        bone.siblings = ParseBone(bone.nextBrotherBoneOffset)
+    
+    // Parse animation data
+    if bone.animationDataIndexOffset != 0:
+        bone.animation = ParseAnimationData(bone.animationDataIndexOffset)
+    
+    return bone</code></pre>
+
+            <h3>5.3 Common Bone Names</h3>
+            <p>Typical bone hierarchies in Manhunt 2 character models:</p>
+            <ul>
+                <li><strong>Root/Pelvis:</strong> <code>Root</code>, <code>Pelvis</code></li>
+                <li><strong>Spine:</strong> <code>Spine</code>, <code>Spine1</code>, <code>Spine2</code>, <code>Spine3</code></li>
+                <li><strong>Head:</strong> <code>Neck</code>, <code>Head</code></li>
+                <li><strong>Left Arm:</strong> <code>L_Shoulder</code>, <code>L_Elbow</code>, <code>L_Wrist</code>, <code>L_Hand</code></li>
+                <li><strong>Right Arm:</strong> <code>R_Shoulder</code>, <code>R_Elbow</code>, <code>R_Wrist</code>, <code>R_Hand</code></li>
+                <li><strong>Left Leg:</strong> <code>L_Hip</code>, <code>L_Knee</code>, <code>L_Ankle</code>, <code>L_Foot</code></li>
+                <li><strong>Right Leg:</strong> <code>R_Hip</code>, <code>R_Knee</code>, <code>R_Ankle</code>, <code>R_Foot</code></li>
+            </ul>
+
+            <h3>5.4 Transformation Matrices</h3>
+            <p>Each bone contains <strong>two 4x4 transformation matrices</strong> stored as 16 consecutive float32 values in row-major order.</p>
+
+            <h4>Matrix 1: Parent-Child Transformation (Local Space)</h4>
+            <p>Transforms from the bone's local coordinate system to its parent's coordinate system. Represents position and orientation relative to parent bone.</p>
+            
+            <div class="info-box warning">
+                <div class="info-box-title">⚠ Important</div>
+                <p>The <strong>root bone</strong> should NOT have this matrix applied during skeleton construction. Only child bones use their parent-child matrix.</p>
+            </div>
+
+            <h4>Matrix 2: World Position (Global Space)</h4>
+            <p>Represents the bone's absolute position and orientation in world space. It's the concatenation of all parent transformations from root to this bone.</p>
+
+            <h4>Matrix Storage Format (Row-Major)</h4>
+            <pre><code>[ m00  m01  m02  m03 ]    Bytes 0-15   (floats 0-3)
+[ m10  m11  m12  m13 ]    Bytes 16-31  (floats 4-7)
+[ m20  m21  m22  m23 ]    Bytes 32-47  (floats 8-11)
+[ m30  m31  m32  m33 ]    Bytes 48-63  (floats 12-15)
+
+Where:
+  - m00-m22: 3x3 rotation/scale matrix
+  - m03, m13, m23: translation (X, Y, Z)
+  - m30, m31, m32: typically 0
+  - m33: typically 1 (homogeneous coordinate)</code></pre>
+
+            <h4>Hex Example: Complete Bone Structure</h4>
+            <pre class="hex-example"><code>00000100: 00 00 00 00              <span class="hex-comment">Reserved</span>
+00000104: 80 01 00 00              <span class="hex-comment">Next Brother = 0x00000180</span>
+00000108: 00 00 00 00              <span class="hex-comment">Parent = NULL (root)</span>
+0000010C: 00 01 00 00              <span class="hex-comment">Root = 0x00000100</span>
+00000110: 40 01 00 00              <span class="hex-comment">Sub Bone = 0x00000140</span>
+00000114: 00 00 00 00              <span class="hex-comment">Animation Data = NULL</span>
+00000118: 52 6F 6F 74 00 ...      <span class="hex-comment">'Root' + padding (40 bytes)</span>
+
+<span class="hex-comment">Parent-Child Matrix (64 bytes at +0x40):</span>
+00000140: 00 00 80 3F 00 00 00 00  <span class="hex-comment">1.0, 0.0, ... (identity)</span>
+<span class="hex-comment">... (64 bytes total) ...</span>
+
+<span class="hex-comment">World Position Matrix (64 bytes at +0x80):</span>
+00000180: 00 00 80 3F 00 00 00 00  <span class="hex-comment">1.0, 0.0, ...</span>
+<span class="hex-comment">... (64 bytes total) ...</span></code></pre>
+
+            <h3>5.5 Skeleton Construction Example</h3>
+            <pre><code>// Build skeleton from bone hierarchy
+allBones = []
+
+function buildSkeleton(boneData, isRoot):
+    bone = createBone(boneData.name)
+    
+    // Apply parent-child matrix (skip for root)
+    if not isRoot:
+        bone.applyMatrix(boneData.parentChildMatrix)
+    
+    allBones.append(bone)
+    
+    // Process children
+    if boneData.subBone:
+        children = buildSkeleton(boneData.subBone, false)
+        bone.addChildren(children)
+    
+    // Process siblings
+    if boneData.nextBrotherBone:
+        siblings = buildSkeleton(boneData.nextBrotherBone, false)
+    
+    return bone
+
+// Build from root
+rootBone = buildSkeleton(parsedRootBone, true)
+skeleton = new Skeleton(allBones)</code></pre>
+        </section>
+
+        <!-- Chapter 6: Object Data -->
+        <section id="object-data">
+            <h2>6. Object Data (Geometry)</h2>
+            
+            <h3>6.1 Object Info Structure (32 bytes)</h3>
+            <p>Objects (mesh data) are stored in a <strong>linked list</strong> accessed via Object Info structures. Each Object Info is 32 bytes and links to the actual geometry data.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Next object info offset (linked list)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Previous object info offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x08</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Object parent bone offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Object data offset (180-byte header)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x10</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Root entry offset (back-reference)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x14</td>
+                            <td>12 bytes</td>
+                            <td>-</td>
+                            <td>Reserved/padding</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="info-box">
+                <div class="info-box-title">📝 List Termination</div>
+                <p>Iterate through objects by following <code>nextObjectInfoOffset</code> until it equals <code>objectInfoIndexOffset</code> (the sentinel value).</p>
+            </div>
+
+            <h3>6.2 Object Data Header (180 bytes)</h3>
+            <p>The actual geometry data begins with a <strong>180-byte header</strong> followed by material IDs, face indices, and vertex data.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Material offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Number of materials</td>
+                        </tr>
+                        <tr>
+                            <td>+0x08</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Bone transform data index offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>8 bytes</td>
+                            <td>-</td>
+                            <td>Unknown</td>
+                        </tr>
+                        <tr>
+                            <td>+0x14</td>
+                            <td>12 bytes</td>
+                            <td>float[3]</td>
+                            <td>Position (X, Y, Z)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x20</td>
+                            <td>8 bytes</td>
+                            <td>int32[2]</td>
+                            <td>Model chunk flag & size</td>
+                        </tr>
+                        <tr>
+                            <td>+0x28</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Zero (padding)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x2C</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Number of material IDs</td>
+                        </tr>
+                        <tr>
+                            <td>+0x30</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Number of face indices</td>
+                        </tr>
+                        <tr>
+                            <td>+0x34</td>
+                            <td>16 bytes</td>
+                            <td>float[4]</td>
+                            <td>Bounding sphere (X, Y, Z, radius)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x44</td>
+                            <td>12 bytes</td>
+                            <td>float[3]</td>
+                            <td>Bounding sphere scale</td>
+                        </tr>
+                        <tr>
+                            <td>+0x50</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Number of vertices</td>
+                        </tr>
+                        <tr>
+                            <td>+0x54</td>
+                            <td>12 bytes</td>
+                            <td>-</td>
+                            <td>Zero/padding</td>
+                        </tr>
+                        <tr>
+                            <td>+0x60</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Per-vertex element size</td>
+                        </tr>
+                        <tr>
+                            <td>+0x64</td>
+                            <td>44 bytes</td>
+                            <td>-</td>
+                            <td>Unknown</td>
+                        </tr>
+                        <tr>
+                            <td>+0x90</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td><strong>Vertex element type</strong> (format ID)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x94</td>
+                            <td>32 bytes</td>
+                            <td>-</td>
+                            <td>Unknown</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>6.3 Data Following Object Header</h3>
+            <p>After the 180-byte header, data blocks appear in this sequence:</p>
+            <ol>
+                <li><strong>Material IDs:</strong> <code>numMaterialIDs × 44 bytes</code></li>
+                <li><strong>Face Indices:</strong> <code>numFaceIndex × 2 bytes (int16)</code></li>
+                <li><strong>Vertex Data:</strong> <code>numVertex × [size based on VertexElementType]</code></li>
+            </ol>
+
+            <h3>6.4 Material ID Structure (44 bytes)</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>24 bytes</td>
+                            <td>float[6]</td>
+                            <td>Bounding box (minX, minY, minZ, maxX, maxY, maxZ)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x18</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Number of faces for this material</td>
+                        </tr>
+                        <tr>
+                            <td>+0x1A</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Material index</td>
+                        </tr>
+                        <tr>
+                            <td>+0x1C</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Start face ID</td>
+                        </tr>
+                        <tr>
+                            <td>+0x1E</td>
+                            <td>14 bytes</td>
+                            <td>-</td>
+                            <td>Padding/reserved</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>Object Parsing Example</h4>
+            <pre><code>// Parse object list
+currentOffset = firstObjectInfoOffset
+
+while currentOffset != objectInfoIndexOffset:
+    seekTo(currentOffset)
+    
+    // Read object info (32 bytes)
+    nextObjOffset = readInt32()
+    prevObjOffset = readInt32()
+    parentBoneOffset = readInt32()
+    objectDataOffset = readInt32()
+    skip(16)
+    
+    // Parse object data
+    seekTo(objectDataOffset)
+    objData = parseObjectData()
+    
+    objects.append(objData)
+    currentOffset = nextObjOffset</code></pre>
+        </section>
+
+        <!-- Chapter 7: Vertex Formats -->
+        <section id="vertex-formats">
+            <h2>7. Vertex Formats</h2>
+            
+            <h3>7.1 Vertex Element Type Decoding</h3>
+            <p>The <code>VertexElementType</code> field (at <strong>+0x90</strong>) is a 32-bit value that determines the vertex format.</p>
+
+            <div class="formula">
+                VertexElementType2 = VertexElementType >> 8<br>
+                skinDataFlag = (VertexElementType2 & 0x10) == 0x10<br>
+                numUV = VertexElementType2 & 0x0F
+            </div>
+
+            <h3>7.2 Format 0x52: Basic Vertex (20 bytes)</h3>
+            <p><strong>No UV, No skinning</strong> - Simple geometry with vertex colors only</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>12 bytes</td>
+                            <td>float[3]</td>
+                            <td>Position (X, Y, Z)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>8 bytes</td>
+                            <td>PackedNormal</td>
+                            <td>Normal vector (packed)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x14</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Color (B, G, R, A)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>7.3 Format 0x152: Vertex with 1 UV Set (28 bytes)</h3>
+            <p><strong>Single texture layer, No skinning</strong></p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>12 bytes</td>
+                            <td>float[3]</td>
+                            <td>Position (X, Y, Z)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>8 bytes</td>
+                            <td>PackedNormal</td>
+                            <td>Normal vector</td>
+                        </tr>
+                        <tr>
+                            <td>+0x14</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Color (B, G, R, A)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x18</td>
+                            <td>8 bytes</td>
+                            <td>float[2]</td>
+                            <td>UV coordinates (U, V)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>7.4 Format 0x252: Vertex with 2 UV Sets (36 bytes)</h3>
+            <p><strong>Two texture layers, No skinning</strong> - For multi-texturing effects</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>12 bytes</td>
+                            <td>float[3]</td>
+                            <td>Position (X, Y, Z)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>8 bytes</td>
+                            <td>PackedNormal</td>
+                            <td>Normal vector</td>
+                        </tr>
+                        <tr>
+                            <td>+0x14</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Color (B, G, R, A)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x18</td>
+                            <td>8 bytes</td>
+                            <td>float[2]</td>
+                            <td>UV1 coordinates (layer 1)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x20</td>
+                            <td>8 bytes</td>
+                            <td>float[2]</td>
+                            <td>UV2 coordinates (layer 2)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>7.5 Format 0x115E: Skinned Vertex with 1 UV (44 bytes)</h3>
+            <p><strong>Single texture, 1-4 bone influences</strong> - For animated characters</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>12 bytes</td>
+                            <td>float[3]</td>
+                            <td>Position (X, Y, Z)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>16 bytes</td>
+                            <td>float[4]</td>
+                            <td>Bone weights (4, 3, 2, 1)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x1C</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Bone IDs (4, 3, 2, 1)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x20</td>
+                            <td>8 bytes</td>
+                            <td>PackedNormal</td>
+                            <td>Normal vector</td>
+                        </tr>
+                        <tr>
+                            <td>+0x28</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Color (B, G, R, A)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x2C</td>
+                            <td>8 bytes</td>
+                            <td>float[2]</td>
+                            <td>UV coordinates (U, V)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="info-box success">
+                <div class="info-box-title">💡 Bone Weights</div>
+                <p>The four bone weights should sum to <strong>1.0</strong>. Each weight determines how much influence the corresponding bone has on this vertex's final position.</p>
+                <p><strong>Normalization:</strong> <code>weight1 + weight2 + weight3 + weight4 = 1.0</code></p>
+            </div>
+
+            <h3>7.6 Format 0x125E: Skinned Vertex with 2 UV (52 bytes)</h3>
+            <p><strong>Two texture layers, 1-4 bone influences</strong></p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>12 bytes</td>
+                            <td>float[3]</td>
+                            <td>Position (X, Y, Z)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>16 bytes</td>
+                            <td>float[4]</td>
+                            <td>Bone weights</td>
+                        </tr>
+                        <tr>
+                            <td>+0x1C</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Bone IDs</td>
+                        </tr>
+                        <tr>
+                            <td>+0x20</td>
+                            <td>8 bytes</td>
+                            <td>PackedNormal</td>
+                            <td>Normal vector</td>
+                        </tr>
+                        <tr>
+                            <td>+0x28</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Color (B, G, R, A)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x2C</td>
+                            <td>8 bytes</td>
+                            <td>float[2]</td>
+                            <td>UV1 coordinates</td>
+                        </tr>
+                        <tr>
+                            <td>+0x34</td>
+                            <td>8 bytes</td>
+                            <td>float[2]</td>
+                            <td>UV2 coordinates</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>7.7 Packed Normal Format (8 bytes)</h3>
+            <p>Normals are stored in a compressed format using 16-bit signed integers for memory efficiency.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Normal X (packed)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x02</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Normal Y (packed)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Normal Z (packed)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x06</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Padding (unused)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>Unpacking Algorithm</h4>
+            <pre><code>// Convert int16 to normalized float [-1.0, +1.0]
+normalX = (float)int16_value / 32768.0
+normalY = (float)int16_value / 32768.0
+normalZ = (float)int16_value / 32768.0
+
+// Result should be a unit vector (length ≈ 1.0)</code></pre>
+
+            <h4>Hex Example: Packed Normal</h4>
+            <pre class="hex-example"><code>FF 7F 00 00 00 00 00 00
+
+int16[0] = 0x7FFF = 32767 → X = 32767/32768 ≈ 0.99997
+int16[1] = 0x0000 = 0     → Y = 0/32768 = 0.0
+int16[2] = 0x0000 = 0     → Z = 0/32768 = 0.0
+
+<span class="hex-comment">Result: Normal ≈ (1.0, 0.0, 0.0) - pointing along +X axis</span></code></pre>
+
+            <h3>7.8 Vertex Format Detection Code</h3>
+            <pre><code>// Read vertex element type
+vertexElementType = readInt32AtOffset(objectOffset + 0x90)
+
+// Decode format
+vertexElementType2 = vertexElementType >> 8
+isSkinned = (vertexElementType2 & 0x10) == 0x10
+numUVLayers = vertexElementType2 & 0x0F
+
+// Determine structure
+switch (vertexElementType) {
+    case 0x52:
+        vertexSize = 20; hasSkinning = false; numUV = 0
+        break
+    case 0x152:
+        vertexSize = 28; hasSkinning = false; numUV = 1
+        break
+    case 0x252:
+        vertexSize = 36; hasSkinning = false; numUV = 2
+        break
+    case 0x115E:
+        vertexSize = 44; hasSkinning = true; numUV = 1
+        break
+    case 0x125E:
+        vertexSize = 52; hasSkinning = true; numUV = 2
+        break
+    default:
+        throw "Unknown vertex format: 0x" + hex(vertexElementType)
+}</code></pre>
+        </section>
+
+        <!-- Chapter 8: Materials -->
+        <section id="materials">
+            <h2>8. Material System</h2>
+            
+            <h3>8.1 Material Structure (12 bytes)</h3>
+            <p>Materials define the visual appearance of mesh surfaces. Each material references a texture and contains color modulation values.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Texture name offset (NULL-terminated string)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Color RGBA (primary) - values 0-255</td>
+                        </tr>
+                        <tr>
+                            <td>+0x08</td>
+                            <td>4 bytes</td>
+                            <td>uint8[4]</td>
+                            <td>Color RGBA (secondary) - values 0-255</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>8.2 Texture Names</h3>
+            <p>The texture name is stored as a <strong>NULL-terminated ASCII string</strong> at the offset specified in <code>TexNameOffset</code>. Texture names typically reference external texture files without file extensions.</p>
+
+            <div class="info-box">
+                <div class="info-box-title">📝 Texture Name Examples</div>
+                <ul>
+                    <li><code>player_head</code> - Character head texture</li>
+                    <li><code>wall_brick</code> - Building wall texture</li>
+                    <li><code>weapon_metal</code> - Weapon material</li>
+                    <li><code>car_paint</code> - Vehicle paint texture</li>
+                    <li><code>cloth_fabric</code> - Clothing material</li>
+                    <li><code>concrete_rough</code> - Environment texture</li>
+                </ul>
+            </div>
+
+            <h4>Hex Example: Material Data</h4>
+            <pre class="hex-example"><code>00001000: 20 10 00 00              <span class="hex-comment">TexNameOffset = 0x00001020</span>
+00001004: FF FF FF FF              <span class="hex-comment">Color1 RGBA = (255,255,255,255) White</span>
+00001008: 80 80 80 FF              <span class="hex-comment">Color2 RGBA = (128,128,128,255) Gray</span>
+
+<span class="hex-comment">At offset 0x00001020:</span>
+00001020: 70 6C 61 79 65 72 5F 68 65 61 64 00  <span class="hex-comment">'player_head\0'</span></code></pre>
+
+            <h3>8.3 Color Values</h3>
+            <p>Color values are stored as <strong>RGBA bytes (0-255)</strong>. When using these in a rendering system, divide by 255.0 to convert to the standard [0.0, 1.0] range.</p>
+
+            <ul>
+                <li><strong>Color_RGBA (Primary):</strong> Diffuse color or texture modulation</li>
+                <li><strong>Color_RGBA2 (Secondary):</strong> Specular color, ambient color, or additional tint</li>
+            </ul>
+
+            <h4>Color Conversion</h4>
+            <pre><code>// Convert uint8 color to float [0.0, 1.0]
+float r = color_R / 255.0
+float g = color_G / 255.0
+float b = color_B / 255.0
+float a = color_A / 255.0</code></pre>
+
+            <h3>8.4 Material Parsing Example</h3>
+            <pre><code>// Parse materials
+numMaterials = readInt32AtOffset(objectOffset + 0x04)
+materialOffset = readInt32AtOffset(objectOffset + 0x00)
+
+if materialOffset != 0:
+    seekTo(materialOffset)
+    materials = []
+    
+    for i in range(numMaterials):
+        material = {
+            'texNameOffset': readInt32(),
+            'colorRGBA1': [
+                readUint8(), readUint8(), 
+                readUint8(), readUint8()
+            ],
+            'colorRGBA2': [
+                readUint8(), readUint8(), 
+                readUint8(), readUint8()
+            ]
+        }
+        
+        // Read texture name
+        savedPos = currentPosition()
+        seekTo(material.texNameOffset)
+        material.texName = readNullTerminatedString()
+        seekTo(savedPos)
+        
+        materials.append(material)</code></pre>
+
+            <h3>8.5 Material Assignment to Faces</h3>
+            <p>Material IDs define ranges of faces. Use them to assign materials correctly:</p>
+
+            <pre><code>// Build material assignment map
+faceMaterials = []
+
+for mtlID in materialIDs:
+    startFace = mtlID.startFaceID
+    numFaces = mtlID.materialIDNumFace
+    materialIndex = mtlID.materialID
+    
+    for faceIdx in range(startFace, startFace + numFaces):
+        faceMaterials[faceIdx] = materialIndex
+
+// Now each face has its material index
+for i, face in enumerate(faces):
+    face.materialIndex = faceMaterials[i]
+    face.material = materials[faceMaterials[i]]</code></pre>
+
+            <div class="info-box warning">
+                <div class="info-box-title">⚠ Material Reuse</div>
+                <p>The same material can be referenced by multiple material IDs. This allows different parts of the mesh to share the same texture while having different bounding boxes for culling.</p>
+            </div>
+
+            <h3>8.6 Complete Material Loading Workflow</h3>
+            <pre><code>function loadMaterials(objectData):
+    materials = []
+    
+    // 1. Parse material structures
+    if objectData.materialOffset != 0:
+        seekTo(objectData.materialOffset)
+        
+        for i in range(objectData.numMaterials):
+            mat = parseMaterialStructure()
+            materials.append(mat)
+    
+    // 2. Parse material IDs (sub-mesh definitions)
+    materialIDs = []
+    for i in range(objectData.numMaterialIDs):
+        mtlID = parseMaterialIDStructure()
+        materialIDs.append(mtlID)
+    
+    // 3. Assign materials to faces
+    faceToMaterial = buildFaceMaterialMap(materialIDs)
+    
+    return {
+        'materials': materials,
+        'materialIDs': materialIDs,
+        'faceToMaterial': faceToMaterial
+    }</code></pre>
+        </section>
+
+        <!-- Chapter 9: Animation -->
+        <section id="animation">
+            <h2>9. Animation Data</h2>
+            
+            <h3>9.1 Animation Data Index Structure (24 bytes)</h3>
+            <p>When a bone has animation data (<code>animationDataIndexOffset != 0</code>), it points to an Animation Data Index structure containing keyframe and bone binding information.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Number of animated bones</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Unknown/reserved</td>
+                        </tr>
+                        <tr>
+                            <td>+0x08</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Root bone offset (hierarchy reference)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x0C</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Animation data offset (bone bindings)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x10</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Bone transform offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x14</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Zero/padding</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>9.2 Animation Data Entry (8 bytes)</h3>
+            <p>If <code>animationDataOffset != 0</code>, read <code>numBone</code> entries:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Animation bone ID (index)</td>
+                        </tr>
+                        <tr>
+                            <td>+0x02</td>
+                            <td>2 bytes</td>
+                            <td>int16</td>
+                            <td>Bone type</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Bone offset (reference)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>9.3 Bone Transform Data Index (Skinning)</h3>
+            <p>Objects with skinning data reference a <strong>BoneTransDataIndex</strong> structure containing inverse bind pose matrices:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offset</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>+0x00</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Number of bones in matrix array</td>
+                        </tr>
+                        <tr>
+                            <td>+0x04</td>
+                            <td>4 bytes</td>
+                            <td>int32</td>
+                            <td>Bone transform data offset</td>
+                        </tr>
+                        <tr>
+                            <td>+0x08</td>
+                            <td>Variable</td>
+                            <td>float[16][]</td>
+                            <td>Array of 4x4 matrices (64 bytes each)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="info-box">
+                <div class="info-box-title">💡 Inverse Bind Pose Matrices</div>
+                <p>These matrices are the <strong>inverse bind pose matrices</strong> used for skeletal animation. They transform vertices from mesh space to bone space, allowing bone transformations to be applied correctly during animation.</p>
+            </div>
+
+            <h3>9.4 Parsing Animation Data</h3>
+            <pre><code>function parseAnimationDataIndex(offset):
+    seekTo(offset)
+    
+    animData = {
+        'numBone': readInt32(),
+        'unknown': readInt32(),
+        'rootBoneOffset': readInt32(),
+        'animationDataOffset': readInt32(),
+        'boneTransformOffset': readInt32(),
+        'zero': readInt32(),
+        'animationData': [],
+        'boneTransform': []
+    }
+    
+    // Parse animation data entries
+    if animData.animationDataOffset != 0:
+        seekTo(animData.animationDataOffset)
+        
+        for i in range(animData.numBone):
+            entry = {
+                'animationBoneId': readInt16(),
+                'boneType': readInt16(),
+                'boneOffset': readInt32()
+            }
+            animData.animationData.append(entry)
+    
+    // Parse bone transform data
+    if animData.boneTransformOffset != 0:
+        seekTo(animData.boneTransformOffset)
+        
+        for i in range(animData.numBone):
+            matrix = read4x4Matrix()  // 64 bytes
+            animData.boneTransform.append(matrix)
+    
+    return animData</code></pre>
+
+            <h3>9.5 Parsing Bone Transform Data (Skinning Matrices)</h3>
+            <pre><code>function parseBoneTransDataIndex(offset):
+    seekTo(offset)
+    
+    data = {
+        'numBone': readInt32(),
+        'boneTransDataOffset': readInt32(),
+        'matrices': []
+    }
+    
+    seekTo(data.boneTransDataOffset)
+    
+    // Read inverse bind pose matrices
+    for i in range(data.numBone):
+        matrix = []
+        for j in range(16):
+            matrix.append(readFloat32())
+        data.matrices.append(matrix)
+    
+    return data</code></pre>
+        </section>
+
+        <!-- Chapter 10: Matrices -->
+        <section id="matrices">
+            <h2>10. Matrix Transformations</h2>
+            
+            <h3>10.1 Matrix Format and Layout</h3>
+            <p>All matrices are <strong>4x4 transformation matrices</strong> stored as 16 consecutive float32 values (64 bytes) in <strong>row-major order</strong>.</p>
+
+            <h4>Row-Major Storage Order</h4>
+            <pre><code>Byte Offset  |  Matrix Element  |  Float Index
+-------------|------------------|-------------
+   0-3       |      m[0][0]     |      0
+   4-7       |      m[0][1]     |      1
+   8-11      |      m[0][2]     |      2
+  12-15      |      m[0][3]     |      3
+  16-19      |      m[1][0]     |      4
+  20-23      |      m[1][1]     |      5
+  24-27      |      m[1][2]     |      6
+  28-31      |      m[1][3]     |      7
+  32-35      |      m[2][0]     |      8
+  36-39      |      m[2][1]     |      9
+  40-43      |      m[2][2]     |     10
+  44-47      |      m[2][3]     |     11
+  48-51      |      m[3][0]     |     12
+  52-55      |      m[3][1]     |     13
+  56-59      |      m[3][2]     |     14
+  60-63      |      m[3][3]     |     15</code></pre>
+
+            <h3>10.2 Transformation Matrix Anatomy</h3>
+            <pre><code>[ Xx  Xy  Xz  Tx ]    X-axis direction and X translation
+[ Yx  Yy  Yz  Ty ]    Y-axis direction and Y translation
+[ Zx  Zy  Zz  Tz ]    Z-axis direction and Z translation
+[ 0   0   0   1  ]    Homogeneous coordinate</code></pre>
+
+            <ul>
+                <li><strong>Upper-left 3x3:</strong> Rotation and scale (orthonormal for pure rotation)</li>
+                <li><strong>Right column (Tx, Ty, Tz):</strong> Translation vector</li>
+                <li><strong>Bottom row:</strong> Typically [0, 0, 0, 1] for affine transformations</li>
+            </ul>
+
+            <h3>10.3 Matrix Application Order (Skinning)</h3>
+            <p>For skeletal animation with skinning, matrices are applied in this order:</p>
+
+            <div class="formula">
+                V<sub>final</sub> = Σ w<sub>i</sub> × (B<sub>i</sub> × IBP<sub>i</sub> × V)
+            </div>
+
+            <pre><code>// Detailed skinning calculation
+1. Start with vertex in mesh local space: V
+
+2. For each bone influence (up to 4):
+   - Get bone's current world matrix: B_i
+   - Get bone's inverse bind pose: IBP_i
+   - Transform vertex: V'_i = B_i × IBP_i × V
+   - Multiply by weight: V'_i × weight_i
+
+3. Sum all weighted transforms:
+   V_final = w1×(B1×IBP1×V) + w2×(B2×IBP2×V) + 
+             w3×(B3×IBP3×V) + w4×(B4×IBP4×V)
+   
+   where w1 + w2 + w3 + w4 = 1.0</code></pre>
+
+            <h3>10.4 Identity Matrix</h3>
+            <p>An identity matrix (no transformation):</p>
+
+            <pre><code>[ 1.0  0.0  0.0  0.0 ]
+[ 0.0  1.0  0.0  0.0 ]
+[ 0.0  0.0  1.0  0.0 ]
+[ 0.0  0.0  0.0  1.0 ]</code></pre>
+
+            <h4>Hex Representation (64 bytes)</h4>
+            <pre class="hex-example"><code>00 00 80 3F 00 00 00 00 00 00 00 00 00 00 00 00  <span class="hex-comment">1.0, 0.0, 0.0, 0.0</span>
+00 00 00 00 00 00 80 3F 00 00 00 00 00 00 00 00  <span class="hex-comment">0.0, 1.0, 0.0, 0.0</span>
+00 00 00 00 00 00 00 00 00 00 80 3F 00 00 00 00  <span class="hex-comment">0.0, 0.0, 1.0, 0.0</span>
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 80 3F  <span class="hex-comment">0.0, 0.0, 0.0, 1.0</span></code></pre>
+
+            <h3>10.5 Translation Matrix Example</h3>
+            <p>Matrix that translates by (5.0, 10.0, 2.0):</p>
+
+            <pre><code>[ 1.0  0.0  0.0  5.0  ]
+[ 0.0  1.0  0.0  10.0 ]
+[ 0.0  0.0  1.0  2.0  ]
+[ 0.0  0.0  0.0  1.0  ]</code></pre>
+
+            <h4>Hex Representation</h4>
+            <pre class="hex-example"><code>00 00 80 3F 00 00 00 00 00 00 00 00 00 00 A0 40  <span class="hex-comment">1.0, 0.0, 0.0, 5.0</span>
+00 00 00 00 00 00 80 3F 00 00 00 00 00 00 20 41  <span class="hex-comment">0.0, 1.0, 0.0, 10.0</span>
+00 00 00 00 00 00 00 00 00 00 80 3F 00 00 00 40  <span class="hex-comment">0.0, 0.0, 1.0, 2.0</span>
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 80 3F  <span class="hex-comment">0.0, 0.0, 0.0, 1.0</span></code></pre>
+
+            <h3>10.6 Matrix Multiplication for Bone Chains</h3>
+            <div class="formula">
+                World<sub>Bone</sub> = Root × Parent1 × Parent2 × ... × CurrentBone
+            </div>
+
+            <pre><code>// Example: Right Hand bone world matrix
+WorldMatrix_RHand = Root × Pelvis × Spine × RShoulder × RElbow × RWrist
+
+// Implementation
+Matrix4 currentMatrix = identityMatrix
+for each bone in hierarchy from root to target:
+    currentMatrix = currentMatrix × bone.localMatrix</code></pre>
+        </section>
+
+        <!-- Chapter 11: Examples -->
+        <section id="examples">
+            <h2>11. Practical Implementation Examples</h2>
+            
+            <h3>11.1 Complete File Parse Walkthrough</h3>
+            <pre><code>// Step 1: Read header and entry offset
+file.seek(0x00)
+header = file.read(32)  // Skip header
+
+file.seek(0x20)
+firstEntryIndexOffset = readInt32()
+
+// Step 2: Traverse entry index list
+entryOffsets = []
+currentOffset = firstEntryIndexOffset
+
+while currentOffset != 0x20:
+    file.seek(currentOffset)
+    nextOffset = readInt32()
+    skip(4)
+    entryDataOffset = readInt32()
+    entryOffsets.append(entryDataOffset)
+    currentOffset = nextOffset
+
+// Step 3: Parse each entry
+for entryOffset in entryOffsets:
+    file.seek(entryOffset)
+    
+    // Read entry header
+    rootBoneOffset = readInt32()
+    skip(16)
+    objectInfoIndexOffset = readInt32()
+    firstObjectInfoOffset = readInt32()
+    lastObjectInfoOffset = readInt32()
+    
+    // Read model name
+    file.seek(rootBoneOffset + 24)
+    modelName = readNullTerminatedString(40)
+    
+    // Parse skeleton
+    file.seek(rootBoneOffset)
+    skeleton = parseBoneHierarchy()
+    
+    // Parse geometry
+    geometry = parseObjectList(firstObjectInfoOffset, objectInfoIndexOffset)</code></pre>
+
+            <h3>11.2 Vertex Format Detection</h3>
+            <pre><code>function detectVertexFormat(vertexElementType):
+    // Decode format
+    vertexElementType2 = vertexElementType >> 8
+    isSkinned = (vertexElementType2 & 0x10) == 0x10
+    numUV = vertexElementType2 & 0x0F
+    
+    // Match to known formats
+    formats = {
+        0x52: { size: 20, skinned: false, uv: 0, name: "Basic" },
+        0x152: { size: 28, skinned: false, uv: 1, name: "UV1" },
+        0x252: { size: 36, skinned: false, uv: 2, name: "UV2" },
+        0x115E: { size: 44, skinned: true, uv: 1, name: "Skinned_UV1" },
+        0x125E: { size: 52, skinned: true, uv: 2, name: "Skinned_UV2" }
+    }
+    
+    if vertexElementType in formats:
+        return formats[vertexElementType]
+    else:
+        throw "Unknown vertex format: 0x" + hex(vertexElementType)</code></pre>
+
+            <h3>11.3 Face Construction from Indices</h3>
+            <pre><code>// Read face indices (triangles)
+numFaceIndices = readInt32()
+faceIndices = []
+
+for i in range(numFaceIndices):
+    faceIndices.append(readInt16())
+
+// Build triangle faces
+faces = []
+for i in range(0, numFaceIndices, 3):
+    face = {
+        'v1': faceIndices[i],
+        'v2': faceIndices[i+1],
+        'v3': faceIndices[i+2]
+    }
+    faces.append(face)
+
+// Example: [0,1,2, 2,1,3] = 2 triangles
+// Face 0: vertices[0], vertices[1], vertices[2]
+// Face 1: vertices[2], vertices[1], vertices[3]</code></pre>
+
+            <h3>11.4 Material Assignment to Faces</h3>
+            <pre><code>// Read material IDs
+materialIDs = []
+for i in range(numMaterialIDs):
+    mtlID = {
+        'boundingBox': readFloats(6),
+        'numFaces': readInt16(),
+        'materialIndex': readInt16(),
+        'startFaceID': readInt16()
+    }
+    skip(14)
+    materialIDs.append(mtlID)
+
+// Assign materials to faces
+for mtlID in materialIDs:
+    startFace = mtlID.startFaceID
+    endFace = startFace + mtlID.numFaces
+    
+    for faceIdx in range(startFace, endFace):
+        faces[faceIdx].materialIndex = mtlID.materialIndex</code></pre>
+
+            <h3>11.5 Skinned Vertex Transformation</h3>
+            <pre><code>function transformSkinnedVertex(vertex, bones, invBindPoses):
+    // Initialize final position
+    finalPosition = Vector3(0, 0, 0)
+    
+    // Apply bone influences
+    boneInfluences = [
+        (vertex.boneID1, vertex.weight1),
+        (vertex.boneID2, vertex.weight2),
+        (vertex.boneID3, vertex.weight3),
+        (vertex.boneID4, vertex.weight4)
+    ]
+    
+    for (boneID, weight) in boneInfluences:
+        if weight > 0:
+            // Get bone's current world matrix
+            boneMatrix = bones[boneID].worldMatrix
+            
+            // Get inverse bind pose matrix
+            invBindPose = invBindPoses[boneID]
+            
+            // Transform: world = bone × invBindPose × localPos
+            transformedPos = boneMatrix × invBindPose × vertex.position
+            
+            // Add weighted contribution
+            finalPosition += transformedPos × weight
+    
+    return finalPosition</code></pre>
+
+            <h3>11.6 Normal Unpacking</h3>
+            <pre><code>function unpackNormal(packedBytes):
+    // Read three int16 values
+    nx_packed = readInt16(packedBytes[0:2])
+    ny_packed = readInt16(packedBytes[2:4])
+    nz_packed = readInt16(packedBytes[4:6])
+    
+    // Convert to float [-1.0, +1.0]
+    nx = nx_packed / 32768.0
+    ny = ny_packed / 32768.0
+    nz = nz_packed / 32768.0
+    
+    // Normalize (optional, should be unit length)
+    length = sqrt(nx*nx + ny*ny + nz*nz)
+    if length > 0:
+        nx /= length
+        ny /= length
+        nz /= length
+    
+    return Vector3(nx, ny, nz)</code></pre>
+
+            <h3>11.7 Complete Model Export (OBJ Format)</h3>
+            <pre><code>function exportToOBJ(modelData, outputPath):
+    with open(outputPath, 'w') as f:
+        f.write("# Manhunt 2 MDL Export\n")
+        f.write(f"# Model: {modelData.name}\n\n")
+        
+        // Write vertices
+        for vertex in modelData.vertices:
+            f.write(f"v {vertex.x} {vertex.y} {vertex.z}\n")
+        
+        // Write normals
+        for normal in modelData.normals:
+            f.write(f"vn {normal.x} {normal.y} {normal.z}\n")
+        
+        // Write UVs
+        for uv in modelData.uvs:
+            f.write(f"vt {uv.u} {uv.v}\n")
+        
+        // Write faces
+        for face in modelData.faces:
+            v1, v2, v3 = face.v1+1, face.v2+1, face.v3+1
+            f.write(f"f {v1}/{v1}/{v1} {v2}/{v2}/{v2} {v3}/{v3}/{v3}\n")</code></pre>
+        </section>
+
+        
+
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Manhunt 2 MDL Format Technical Documentation v1.0</p>
+            <p>For educational and research purposes only</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
