@@ -157,6 +157,29 @@
     </header>
 
     <div class="projects-grid">
+
+<div class="project-card">
+            <div class="project-number">2</div>
+            <h2 class="project-title">MDL Format Documentation</h2>
+            <p class="project-description">
+                Umfassende technische Dokumentation des Manhunt 2 MDL Model Formats. Deep-dive in Dateistrukturen, Vertex-Formate, Skelett-Hierarchien und Matrix-Transformationen mit Hex-Beispielen und Code-Samples.
+            </p>
+            <div class="project-tech">
+                <span class="tech-tag">Binary Format</span>
+                <span class="tech-tag">3D Models</span>
+                <span class="tech-tag">Reverse Engineering</span>
+                <span class="tech-tag">Technical Writing</span>
+            </div>
+            <div class="project-links">
+                <a href="MH2_MDL_Format_Documentation.html" class="project-link">
+                    <svg viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M4 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zm0 1v12h8V2H4z"/>
+                        <path d="M5 4h6v1H5V4zm0 2h6v1H5V6zm0 2h6v1H5V8zm0 2h4v1H5v-1z"/>
+                    </svg>
+                    Documentation
+                </a>
+            </div>
+        </div>    
         <div class="project-card">
             <div class="project-number">1</div>
             <h2 class="project-title">TFT-Display Emulator</h2>
