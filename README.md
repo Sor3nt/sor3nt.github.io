@@ -198,9 +198,9 @@
 <body>
 <div class="container">
     <header>
-        <h1>Projects</h1>
+        <h1>Vibe Coded</h1>
         <p class="subtitle">
-            <span class="status-indicator"></span>Technical documentation and development tools
+            <span class="status-indicator"></span>Random Vibe coded stuff.
         </p>
     </header>
 
@@ -252,6 +252,33 @@
                         <path d="M4 1.75C4 .784 4.784 0 5.75 0h5.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0113.25 16h-7.5A1.75 1.75 0 014 14.25V1.75zm1.75-.25a.25.25 0 00-.25.25v12.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25V6h-2.75A1.75 1.75 0 019 4.25V1.5H5.75zm6.75.062V4.25c0 .138.112.25.25.25h2.688a.252.252 0 00-.011-.013l-2.914-2.914a.254.254 0 00-.013-.011z"/>
                     </svg>
                     Read Docs
+                </a>
+            </div>
+        </div>
+
+        <div class="project-card">
+            <div class="project-header">
+                <span class="project-number">#XX</span>
+                <h2 class="project-title">Projection Mapping Tool v4</h2>
+            </div>
+            <p class="project-description">
+                Advanced real-time projection mapping tool with video transformation, animated effects, and live preview. 
+                Features wavy video distortion, multi-effect combinations (travel on wave paths), 
+                zoom/pan canvas navigation, and dual-tab live sync for professional VJ performances.
+            </p>
+            <div class="project-tech">
+                <span class="tech-tag">Canvas 2D</span>
+                <span class="tech-tag">Video Transformation</span>
+                <span class="tech-tag">Real-time Effects</span>
+                <span class="tech-tag">VJ Tool</span>
+                <span class="tech-tag">Live Performance</span>
+            </div>
+            <div class="project-links">
+                <a href="projection-mapping-v4.html" class="project-link">
+                    <svg viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M1.75 0A1.75 1.75 0 000 1.75v12.5C0 15.216.784 16 1.75 16h12.5A1.75 1.75 0 0016 14.25V1.75A1.75 1.75 0 0014.25 0H1.75zM1.5 1.75a.25.25 0 01.25-.25h12.5a.25.25 0 01.25.25v12.5a.25.25 0 01-.25.25H1.75a.25.25 0 01-.25-.25V1.75zM6 5.25a.75.75 0 01.75-.75h5.5a.75.75 0 010 1.5h-5.5A.75.75 0 016 5.25zm.75 2.25a.75.75 0 000 1.5h5.5a.75.75 0 000-1.5h-5.5zM6 10.25a.75.75 0 01.75-.75h5.5a.75.75 0 010 1.5h-5.5a.75.75 0 01-.75-.75zM3.5 5.25a.75.75 0 01.75-.75h.5a.75.75 0 010 1.5h-.5a.75.75 0 01-.75-.75zM4.25 7.5a.75.75 0 000 1.5h.5a.75.75 0 000-1.5h-.5zM3.5 10.25a.75.75 0 01.75-.75h.5a.75.75 0 010 1.5h-.5a.75.75 0 01-.75-.75z"/>
+                    </svg>
+                    Launch Tool
                 </a>
             </div>
         </div>
