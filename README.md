@@ -258,7 +258,7 @@
 
         <div class="project-card">
             <div class="project-header">
-                <span class="project-number">#XX</span>
+                <span class="project-number">#03</span>
                 <h2 class="project-title">Projection Mapping Tool v4</h2>
             </div>
             <p class="project-description">
