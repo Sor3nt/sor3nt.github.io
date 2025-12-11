@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projection Mapping Tool v4</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #ddd; overflow: hidden; }
+        #container { display: flex; height: 100vh; }
+        #container.fullscreen { flex-direction: column; }
+        #sidebar { width: 300px; background: #1a1a1a; padding: 12px; overflow-y: auto; border-right: 1px solid #333; }
+        #container.fullscreen #sidebar { display: none; }
+        #canvas-container { flex: 1; position: relative; background: #000; }
+        #canvas { width: 100%; height: 100%; display: block; }
+
+        h2 { margin: 0 0 8px 0; font-size: 14px; color: #4CAF50; border-bottom: 1px solid #333; padding-bottom: 4px; font-weight: 600; }
+        .section { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #222; }
+        .section:last-child { border-bottom: none; }
+
+        button { width: 100%; padding: 7px; margin: 3px 0; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; transition: all 0.15s; font-weight: 500; }
+        button:hover { background: #45a049; }
+        button.danger { background: #e53935; }
+        button.danger:hover { background: #c62828; }
+        button.secondary { background: #424242; }
+        button.secondary:hover { background: #505050; }
+        button.preview { background: #1976D2; }
+        button.preview:hover { background: #1565C0; }
+
+        select, input[type="text"], input[type="color"], input[type="range"], input[type="number"] {
+            width: 100%; padding: 6px; margin: 3px 0; background: #252525; border: 1px solid #3a3a3a; color: #ddd; border-radius: 3px; font-size: 11px;
+        }
+        select { cursor: pointer; height: 30px; }
+        input[type="color"] { height: 32px; cursor: pointer; }
+        input[type="range"] { cursor: pointer; padding: 3px; }
+        input[type="number"] { width: 70px; }
+
+        label { display: block; margin: 6px 0 2px 0; font-size: 11px; color: #999; font-weight: 500; }
+        .label-value { float: right; color: #4CAF50; font-weight: 600; }
+
+        .layer-item { background: #252525; padding: 8px; margin: 6px 0; border-radius: 3px; border: 2px solid transparent; cursor: pointer; transition: all 0.15s; }
+        .layer-item:hover { background: #2a2a2a; border-color: #333; }
+        .layer-item.active { border-color: #4CAF50; background: #1a2e1a; }
+        .layer-item h4 { font-size: 12px; margin-bottom: 3px; font-weight: 500; }
+        .layer-item p { font-size: 10px; color: #777; margin-bottom: 5px; }
+        .layer-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; margin-top: 5px; }
+        .layer-controls button { padding: 4px; font-size: 10px; margin: 0; }
+
+        .color-preview { display: inline-block; width: 16px; height: 16px; border-radius: 2px; border: 1px solid #555; vertical-align: middle; margin-left: 4px; }
+
+        .inline-group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .inline-group label { margin-top: 0; }
+
+        .help-text { font-size: 10px; color: #666; line-height: 1.4; background: #1a1a1a; padding: 6px; border-radius: 3px; }
+
+        .fullscreen-info { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 8px 12px; border-radius: 3px; font-size: 11px; color: #4CAF50; z-index: 1000; display: none; }
+        #container.fullscreen .fullscreen-info { display: block; }
+        .fullscreen-exit { position: fixed; top: 10px; left: 10px; background: rgba(229,57,53,0.9); padding: 6px 10px; border-radius: 3px; font-size: 10px; cursor: pointer; z-index: 1000; display: none; font-weight: 600; }
+        #container.fullscreen .fullscreen-exit { display: block; }
+        .fullscreen-exit:hover { background: rgba(198,40,40,0.9); }
+
+        .radio-group { display: flex; gap: 4px; flex-wrap: wrap; margin: 3px 0; }
+        .radio-option { flex: 1; min-width: 0; }
+        .radio-option input[type="radio"] { display: none; }
+        .radio-option label {
+            display: block; padding: 5px; background: #252525; border: 1px solid #3a3a3a; border-radius: 3px;
+            text-align: center; cursor: pointer; font-size: 10px; margin: 0; transition: all 0.15s;
+        }
+        .radio-option input[type="radio"]:checked + label { background: #4CAF50; color: #fff; border-color: #4CAF50; }
+        .radio-option label:hover { border-color: #4CAF50; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div id="sidebar">
+        <h2>🎨 Projection Mapping v4</h2>
+
+        <div class="section">
+            <h2>➕ Neuer Layer</h2>
+            <select id="layer-type-select">
+                <option value="">-- Form wählen --</option>
+                <option value="square">⬜ Quadrat</option>
+                <option value="circle">⭕ Kreis</option>
+                <option value="triangle">🔺 Dreieck</option>
+                <option value="star">⭐ Stern</option>
+                <option value="hexagon">⬡ Hexagon</option>
+                <option value="line">📏 Freie Linie</option>
+            </select>
+            <button onclick="app.addLayerFromDropdown()">Layer Erstellen</button>
+        </div>
+
+        <div class="section">
+            <h2>Layers (<span id="layer-count">0</span>)</h2>
+            <div id="layers-list"></div>
+        </div>
+
+        <div class="section" id="layer-settings" style="display: none;">
+            <h2>⚙️ Einstellungen</h2>
+            <div id="settings-content"></div>
+        </div>
+
+        <div class="section">
+            <h2>🖥️ Vorschau</h2>
+            <button onclick="app.enterFullscreen()" class="preview">Fullscreen Modus</button>
+            <button onclick="app.resetZoom()" class="secondary" style="margin-top: 3px;">🔍 Zoom Zurücksetzen</button>
+            <p class="help-text">
+                💡 <strong>Navigation:</strong><br>
+                🖱️ Mausrad: Zoomen<br>
+                ⌨️ Space+Drag: Verschieben<br>
+                🖱️ Mittlere Maustaste: Verschieben
+            </p>
+            <p class="help-text" style="margin-top: 6px;">
+                💡 Öffne in 2 Tabs: Editor + Fullscreen auf Beamer (Auto-Sync)
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>💾 Projekt</h2>
+            <button onclick="app.saveToFile()">Datei Speichern</button>
+            <button onclick="document.getElementById('project-file').click()" class="secondary">Datei Laden</button>
+            <input type="file" id="project-file" accept=".json" style="display:none" onchange="app.loadFromFile(event)">
+            <button onclick="app.clearAll()" class="danger">Alles Löschen</button>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+        <div class="fullscreen-info">🔴 LIVE</div>
+        <div class="fullscreen-exit" onclick="app.exitFullscreen()">✕ ESC</div>
+    </div>
+</div>
+
+<script>
+    class ProjectionMappingApp {
+        constructor() {
+            this.canvas = document.getElementById('canvas');
+            this.ctx = this.canvas.getContext('2d');
+            this.layers = [];
+            this.activeLayer = null;
+            this.time = 0;
+            this.draggedPoint = null;
+            this.draggedLayer = null;
+            this.selectedPoint = null;
+            this.mappingMode = false;
+            this.tempPoints = [];
+            this.isFullscreen = false;
+            this.lastStorageState = null;
+            this.storageCheckInterval = null;
+            this.layerCounter = 1;
+
+            // Zoom and Pan
+            this.zoom = 1.0;
+            this.panX = 0;
+            this.panY = 0;
+            this.isPanning = false;
+            this.panStartX = 0;
+            this.panStartY = 0;
+            this.spacePressed = false;
+
+            this.setupCanvas();
+            this.setupEventListeners();
+            this.loadFromStorage();
+            this.animate();
+            this.startAutoSave();
+        }
+
+        setupCanvas() {
+            const resize = () => {
+                this.canvas.width = this.canvas.offsetWidth;
+                this.canvas.height = this.canvas.offsetHeight;
+            };
+            resize();
+            window.addEventListener('resize', resize);
+        }
+
+        setupEventListeners() {
+            this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+            this.canvas.addEventListener('contextmenu', (e) => this.handleRightClick(e));
+            this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+            this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+            this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+            this.canvas.addEventListener('wheel', (e) => this.handleWheel(e));
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.isFullscreen) {
+                    this.exitFullscreen();
+                }
+                if ((e.key === 'Backspace' || e.key === 'Delete') && this.selectedPoint) {
+                    e.preventDefault();
+                    this.deleteSelectedPoint();
+                }
+                if (e.code === 'Space' && !this.isFullscreen) {
+                    e.preventDefault();
+                    this.spacePressed = true;
+                    this.canvas.style.cursor = 'grab';
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') {
+                    this.spacePressed = false;
+                    if (!this.isPanning) {
+                        this.canvas.style.cursor = 'default';
+                    }
+                }
+            });
+        }
+
+        handleWheel(e) {
+            if (this.isFullscreen) return;
+            e.preventDefault();
+
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Mouse position in world coordinates before zoom
+            const worldX = (mouseX - this.panX) / this.zoom;
+            const worldY = (mouseY - this.panY) / this.zoom;
+
+            // Zoom
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            this.zoom *= zoomFactor;
+            this.zoom = Math.max(0.1, Math.min(10, this.zoom)); // Limit zoom 10% to 1000%
+
+            // Adjust pan to keep mouse position fixed
+            this.panX = mouseX - worldX * this.zoom;
+            this.panY = mouseY - worldY * this.zoom;
+        }
+
+        handleCanvasClick(e) {
+            if (!this.mappingMode) return;
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const x = (mouseX - this.panX) / this.zoom;
+            const y = (mouseY - this.panY) / this.zoom;
+            this.tempPoints.push({ x, y });
+            if (this.activeLayer) {
+                this.activeLayer.points = [...this.tempPoints];
+            }
+        }
+
+        handleRightClick(e) {
+            e.preventDefault();
+            if (this.mappingMode && this.tempPoints.length >= 2) {
+                this.finishMapping();
+            }
+        }
+
+        handleMouseDown(e) {
+            if (this.isFullscreen) return;
+
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Start panning with middle mouse button or Space + left click
+            if (e.button === 1 || (e.button === 0 && this.spacePressed)) {
+                this.isPanning = true;
+                this.panStartX = mouseX - this.panX;
+                this.panStartY = mouseY - this.panY;
+                this.canvas.style.cursor = 'grabbing';
+                e.preventDefault();
+                return;
+            }
+
+            if (this.mappingMode) return;
+
+            // Convert to world coordinates
+            const x = (mouseX - this.panX) / this.zoom;
+            const y = (mouseY - this.panY) / this.zoom;
+
+            // Check points first
+            for (let i = this.layers.length - 1; i >= 0; i--) {
+                const layer = this.layers[i];
+                if (!layer.visible) continue;
+
+                for (let j = 0; j < layer.points.length; j++) {
+                    const point = layer.points[j];
+                    if (Math.hypot(point.x - x, point.y - y) < 15 / this.zoom) {
+                        this.draggedPoint = { layer, point };
+                        this.selectedPoint = { layer, pointIndex: j };
+                        this.selectLayer(layer);
+                        this.canvas.style.cursor = 'grabbing';
+                        return;
+                    }
+                }
+            }
+
+            this.selectedPoint = null;
+
+            // Check if clicking inside a shape
+            for (let i = this.layers.length - 1; i >= 0; i--) {
+                const layer = this.layers[i];
+                if (!layer.visible) continue;
+
+                if (layer.closed && layer.points.length >= 3 && this.isPointInsidePolygon(x, y, layer.points)) {
+                    this.draggedLayer = {
+                        layer: layer,
+                        startX: x,
+                        startY: y,
+                        originalPoints: layer.points.map(p => ({...p}))
+                    };
+                    this.selectLayer(layer);
+                    this.canvas.style.cursor = 'move';
+                    return;
+                }
+            }
+        }
+
+        isPointInsidePolygon(x, y, points) {
+            let inside = false;
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const xi = points[i].x, yi = points[i].y;
+                const xj = points[j].x, yj = points[j].y;
+                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        handleMouseMove(e) {
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Handle panning
+            if (this.isPanning) {
+                this.panX = mouseX - this.panStartX;
+                this.panY = mouseY - this.panStartY;
+                return;
+            }
+
+            // Convert to world coordinates
+            const x = (mouseX - this.panX) / this.zoom;
+            const y = (mouseY - this.panY) / this.zoom;
+
+            if (this.draggedPoint) {
+                this.draggedPoint.point.x = x;
+                this.draggedPoint.point.y = y;
+                this.saveToStorage();
+            } else if (this.draggedLayer) {
+                const dx = x - this.draggedLayer.startX;
+                const dy = y - this.draggedLayer.startY;
+                this.draggedLayer.layer.points = this.draggedLayer.originalPoints.map(p => ({
+                    x: p.x + dx,
+                    y: p.y + dy
+                }));
+                this.saveToStorage();
+            }
+        }
+
+        handleMouseUp(e) {
+            if (this.isPanning) {
+                this.isPanning = false;
+                this.canvas.style.cursor = this.spacePressed ? 'grab' : 'default';
+            }
+
+            if (this.draggedPoint || this.draggedLayer) {
+                this.draggedPoint = null;
+                this.draggedLayer = null;
+                this.canvas.style.cursor = 'default';
+            }
+        }
+
+        addLayerFromDropdown() {
+            const select = document.getElementById('layer-type-select');
+            const type = select.value;
+
+            if (!type) {
+                alert('Bitte wähle eine Form aus!');
+                return;
+            }
+
+            if (type === 'line') {
+                this.addLineLayer();
+            } else {
+                this.addShapeLayer(type);
+            }
+
+            select.value = '';
+        }
+
+        addLineLayer() {
+            const layer = new Layer();
+            layer.name = `Layer ${this.layerCounter++} (Linie)`;
+            layer.shapeType = 'line';
+            layer.closed = false;
+            this.layers.push(layer);
+            this.selectLayer(layer);
+            this.startMapping();
+            this.updateUI();
+        }
+
+        addShapeLayer(shape) {
+            const shapeNames = {
+                'square': 'Quadrat',
+                'circle': 'Kreis',
+                'triangle': 'Dreieck',
+                'star': 'Stern',
+                'hexagon': 'Hexagon'
+            };
+
+            const layer = new Layer();
+            layer.name = `Layer ${this.layerCounter++} (${shapeNames[shape]})`;
+            layer.shapeType = shape;
+            layer.closed = true;
+
+            const cx = this.canvas.width / 2;
+            const cy = this.canvas.height / 2;
+            const size = 100;
+
+            if (shape === 'square') {
+                layer.points = [
+                    { x: cx - size, y: cy - size },
+                    { x: cx + size, y: cy - size },
+                    { x: cx + size, y: cy + size },
+                    { x: cx - size, y: cy + size }
+                ];
+            } else if (shape === 'circle') {
+                for (let i = 0; i < 32; i++) {
+                    const angle = (i / 32) * Math.PI * 2;
+                    layer.points.push({ x: cx + Math.cos(angle) * size, y: cy + Math.sin(angle) * size });
+                }
+            } else if (shape === 'triangle') {
+                layer.points = [
+                    { x: cx, y: cy - size },
+                    { x: cx + size, y: cy + size },
+                    { x: cx - size, y: cy + size }
+                ];
+            } else if (shape === 'star') {
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+                    const radius = i % 2 === 0 ? size : size * 0.4;
+                    layer.points.push({ x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius });
+                }
+            } else if (shape === 'hexagon') {
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    layer.points.push({ x: cx + Math.cos(angle) * size, y: cy + Math.sin(angle) * size });
+                }
+            }
+
+            this.layers.push(layer);
+            this.selectLayer(layer);
+            this.updateUI();
+            this.saveToStorage();
+        }
+
+        startMapping() {
+            this.mappingMode = true;
+            this.tempPoints = [];
+            this.canvas.style.cursor = 'crosshair';
+        }
+
+        finishMapping() {
+            this.mappingMode = false;
+            this.tempPoints = [];
+            this.canvas.style.cursor = 'default';
+            this.updateUI();
+            this.saveToStorage();
+        }
+
+        selectLayer(layer) {
+            this.activeLayer = layer;
+            this.updateUI();
+        }
+
+        deleteLayer(layer) {
+            const index = this.layers.indexOf(layer);
+            if (index > -1) {
+                if (layer.videoElement) {
+                    layer.videoElement.pause();
+                    layer.videoElement.src = '';
+                }
+                if (layer.imageElement) {
+                    layer.imageElement.src = '';
+                }
+                this.layers.splice(index, 1);
+                if (this.activeLayer === layer) {
+                    this.activeLayer = null;
+                }
+                this.updateUI();
+                this.saveToStorage();
+            }
+        }
+
+        toggleVisibility(layer) {
+            layer.visible = !layer.visible;
+            this.updateUI();
+            this.saveToStorage();
+        }
+
+        remapLayer(layer) {
+            this.selectLayer(layer);
+            layer.points = [];
+            this.startMapping();
+        }
+
+        deleteSelectedPoint() {
+            if (!this.selectedPoint) return;
+            const { layer, pointIndex } = this.selectedPoint;
+
+            if (layer.points.length <= 2) {
+                alert('Layer benötigt mindestens 2 Punkte');
+                return;
+            }
+
+            layer.points.splice(pointIndex, 1);
+            this.selectedPoint = null;
+            this.saveToStorage();
+        }
+
+        scaleLayer(layer, newScale) {
+            if (!layer.originalPoints) {
+                // Store original points on first scale
+                layer.originalPoints = layer.points.map(p => ({...p}));
+            }
+
+            // Calculate center
+            const centerX = layer.originalPoints.reduce((sum, p) => sum + p.x, 0) / layer.originalPoints.length;
+            const centerY = layer.originalPoints.reduce((sum, p) => sum + p.y, 0) / layer.originalPoints.length;
+
+            // Scale points from center
+            layer.points = layer.originalPoints.map(p => ({
+                x: centerX + (p.x - centerX) * newScale,
+                y: centerY + (p.y - centerY) * newScale
+            }));
+
+            layer.scale = newScale;
+        }
+
+        resetLayerScale() {
+            if (!this.activeLayer) return;
+            const layer = this.activeLayer;
+
+            if (layer.originalPoints) {
+                layer.points = layer.originalPoints.map(p => ({...p}));
+                delete layer.originalPoints;
+            }
+            layer.scale = 1;
+
+            this.updateSettings();
+            this.saveToStorage();
+        }
+
+        updateUI() {
+            if (this.isFullscreen) return;
+            this.updateLayersList();
+            this.updateSettings();
+        }
+
+        updateLayersList() {
+            const list = document.getElementById('layers-list');
+            const countEl = document.getElementById('layer-count');
+            list.innerHTML = '';
+            countEl.textContent = this.layers.length;
+
+            if (this.layers.length === 0) {
+                list.innerHTML = '<p style="color: #555; text-align: center; padding: 12px; font-size: 10px;">Keine Layers</p>';
+                return;
+            }
+
+            this.layers.forEach((layer, index) => {
+                const div = document.createElement('div');
+                div.className = 'layer-item' + (layer === this.activeLayer ? ' active' : '');
+                div.onclick = () => this.selectLayer(layer);
+
+                const fillIcon = layer.fillType === 'video' ? '🎬' : layer.fillType === 'image' ? '🖼️' : layer.fillType === 'color' ? '🎨' : '⬛';
+                const effectCount = layer.effects && layer.effects.length > 0 ? layer.effects.length : 0;
+                const effectIcon = effectCount > 0 ? '✨' + (effectCount > 1 ? `×${effectCount}` : '') : '';
+
+                div.innerHTML = `
+                <h4>${layer.name} ${fillIcon}${effectIcon}</h4>
+                <p>${layer.points.length} Punkte${layer.fillType !== 'none' ? ' • ' + layer.fillType : ''}${effectCount > 0 ? ' • ' + effectCount + ' FX' : ''}</p>
+                <div class="layer-controls">
+                    <button onclick="event.stopPropagation(); app.toggleVisibility(app.layers[${index}])" title="Sichtbarkeit">${layer.visible ? '👁️' : '🚫'}</button>
+                    <button onclick="event.stopPropagation(); app.remapLayer(app.layers[${index}])" title="Punkte neu setzen">🔄</button>
+                    <button onclick="event.stopPropagation(); app.confirmDeleteLayer(${index})" class="danger" title="Löschen">🗑️</button>
+                </div>
+            `;
+                list.appendChild(div);
+            });
+        }
+
+        confirmDeleteLayer(index) {
+            if (confirm('Layer löschen?')) {
+                this.deleteLayer(this.layers[index]);
+            }
+        }
+
+        updateSettings() {
+            const container = document.getElementById('layer-settings');
+            const content = document.getElementById('settings-content');
+            if (!this.activeLayer) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'block';
+            content.innerHTML = '';
+
+            const layer = this.activeLayer;
+
+            // Name
+            const nameDiv = document.createElement('div');
+            nameDiv.innerHTML = `<label>Name</label><input type="text" value="${layer.name}" id="layer-name">`;
+            content.appendChild(nameDiv);
+            document.getElementById('layer-name').addEventListener('change', (e) => {
+                layer.name = e.target.value;
+                this.updateLayersList();
+                this.saveToStorage();
+            });
+
+            // Opacity
+            const opacityDiv = document.createElement('div');
+            opacityDiv.innerHTML = `<label>Deckkraft <span class="label-value" id="opacity-val">${Math.round(layer.opacity * 100)}%</span></label><input type="range" min="0" max="100" value="${layer.opacity * 100}" id="layer-opacity">`;
+            content.appendChild(opacityDiv);
+            document.getElementById('layer-opacity').addEventListener('input', (e) => {
+                layer.opacity = e.target.value / 100;
+                document.getElementById('opacity-val').textContent = e.target.value + '%';
+                this.saveToStorage();
+            });
+
+            // Scale
+            const scaleDiv = document.createElement('div');
+            scaleDiv.innerHTML = `
+                <label>Skalierung <span class="label-value" id="scale-val">${Math.round((layer.scale || 1) * 100)}%</span></label>
+                <input type="range" min="10" max="300" value="${(layer.scale || 1) * 100}" id="layer-scale">
+                <button onclick="app.resetLayerScale()" class="secondary" style="margin-top: 3px;">↺ Zurücksetzen</button>
+            `;
+            content.appendChild(scaleDiv);
+            document.getElementById('layer-scale').addEventListener('input', (e) => {
+                const newScale = e.target.value / 100;
+                const oldScale = layer.scale || 1;
+                layer.scale = newScale;
+
+                // Scale points around center
+                const centerX = layer.points.reduce((sum, p) => sum + p.x, 0) / layer.points.length;
+                const centerY = layer.points.reduce((sum, p) => sum + p.y, 0) / layer.points.length;
+
+                layer.points = layer.points.map(p => ({
+                    x: centerX + (p.x - centerX) * (newScale / oldScale),
+                    y: centerY + (p.y - centerY) * (newScale / oldScale)
+                }));
+
+                document.getElementById('scale-val').textContent = e.target.value + '%';
+                this.saveToStorage();
+            });
+
+            // Fill Type
+            const fillDiv = document.createElement('div');
+            fillDiv.innerHTML = `<label>Füllung</label>`;
+            const fillRadio = document.createElement('div');
+            fillRadio.className = 'radio-group';
+            fillRadio.innerHTML = `
+                <div class="radio-option"><input type="radio" name="fillType" id="fill-none" value="none" ${layer.fillType === 'none' ? 'checked' : ''}><label for="fill-none">⬛ Nichts</label></div>
+                <div class="radio-option"><input type="radio" name="fillType" id="fill-color" value="color" ${layer.fillType === 'color' ? 'checked' : ''}><label for="fill-color">🎨 Farbe</label></div>
+                <div class="radio-option"><input type="radio" name="fillType" id="fill-video" value="video" ${layer.fillType === 'video' ? 'checked' : ''}><label for="fill-video">🎬 Video</label></div>
+                <div class="radio-option"><input type="radio" name="fillType" id="fill-image" value="image" ${layer.fillType === 'image' ? 'checked' : ''}><label for="fill-image">🖼️ Bild</label></div>
+            `;
+            fillDiv.appendChild(fillRadio);
+            content.appendChild(fillDiv);
+
+            document.querySelectorAll('input[name="fillType"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    layer.fillType = e.target.value;
+                    this.updateSettings();
+                    this.saveToStorage();
+                });
+            });
+
+            // Fill Type Specific Settings
+            if (layer.fillType === 'color') {
+                const colorDiv = document.createElement('div');
+                colorDiv.innerHTML = `<label>Füllfarbe <span class="color-preview" style="background: ${layer.fillColor}"></span></label><input type="color" value="${layer.fillColor}" id="fill-color-picker">`;
+                content.appendChild(colorDiv);
+                document.getElementById('fill-color-picker').addEventListener('change', (e) => {
+                    layer.fillColor = e.target.value;
+                    this.updateSettings();
+                    this.saveToStorage();
+                });
+            } else if (layer.fillType === 'video') {
+                const videoDiv = document.createElement('div');
+                videoDiv.innerHTML = `
+                    <label>Video URL</label>
+                    <input type="text" placeholder="https://..." value="${layer.videoSrc || ''}" id="video-url">
+                    <button onclick="app.loadVideoFromUrl()">Video Laden</button>
+                    ${layer.videoSrc ? '<p style="color: #4CAF50; font-size: 10px; margin-top: 3px;">✓ Geladen</p>' : ''}
+                `;
+                content.appendChild(videoDiv);
+            } else if (layer.fillType === 'image') {
+                const imageDiv = document.createElement('div');
+                imageDiv.innerHTML = `
+                    <label>Bild URL</label>
+                    <input type="text" placeholder="https://..." value="${layer.imageSrc || ''}" id="image-url">
+                    <button onclick="app.loadImageFromUrl()">Bild Laden</button>
+                    ${layer.imageSrc ? '<p style="color: #4CAF50; font-size: 10px; margin-top: 3px;">✓ Geladen</p>' : ''}
+                `;
+                content.appendChild(imageDiv);
+            }
+
+            // Stroke (Border)
+            const strokeDiv = document.createElement('div');
+            strokeDiv.innerHTML = `<label>Rahmen</label>`;
+            const strokeCheck = document.createElement('div');
+            strokeCheck.innerHTML = `
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="has-stroke" ${layer.hasStroke ? 'checked' : ''} style="width: auto; margin: 0;">
+                    <span style="font-size: 11px;">Rahmen aktivieren</span>
+                </label>
+            `;
+            strokeDiv.appendChild(strokeCheck);
+            content.appendChild(strokeDiv);
+
+            document.getElementById('has-stroke').addEventListener('change', (e) => {
+                layer.hasStroke = e.target.checked;
+                this.updateSettings();
+                this.saveToStorage();
+            });
+
+            if (layer.hasStroke) {
+                const strokeSettingsDiv = document.createElement('div');
+                strokeSettingsDiv.innerHTML = `
+                    <div class="inline-group">
+                        <div>
+                            <label>Rahmenfarbe</label>
+                            <input type="color" value="${layer.strokeColor}" id="stroke-color">
+                        </div>
+                        <div>
+                            <label>Breite <span class="label-value">${layer.strokeWidth}px</span></label>
+                            <input type="range" min="1" max="30" value="${layer.strokeWidth}" id="stroke-width">
+                        </div>
+                    </div>
+                `;
+                content.appendChild(strokeSettingsDiv);
+
+                document.getElementById('stroke-color').addEventListener('change', (e) => {
+                    layer.strokeColor = e.target.value;
+                    this.saveToStorage();
+                });
+
+                document.getElementById('stroke-width').addEventListener('input', (e) => {
+                    layer.strokeWidth = parseInt(e.target.value);
+                    document.querySelector('#stroke-width').previousElementSibling.querySelector('.label-value').textContent = e.target.value + 'px';
+                    this.saveToStorage();
+                });
+            }
+
+            // Effect Type - Multiple selectable
+            const effectDiv = document.createElement('div');
+            effectDiv.innerHTML = `<label>Linien Effekte (mehrfach wählbar)</label>`;
+
+            const effectOptions = [
+                { value: 'pulse', label: 'Pulsieren' },
+                { value: 'travel', label: 'Wandern' },
+                { value: 'wave', label: 'Welle' },
+                { value: 'strobe', label: 'Strobe' },
+                { value: 'rainbow', label: 'Rainbow' },
+                { value: 'breathe', label: 'Atmen' }
+            ];
+
+            const effectCheckboxes = document.createElement('div');
+            effectCheckboxes.style.display = 'grid';
+            effectCheckboxes.style.gridTemplateColumns = '1fr 1fr';
+            effectCheckboxes.style.gap = '4px';
+            effectCheckboxes.style.marginTop = '4px';
+
+            effectOptions.forEach(effect => {
+                const checkDiv = document.createElement('label');
+                checkDiv.style.display = 'flex';
+                checkDiv.style.alignItems = 'center';
+                checkDiv.style.gap = '4px';
+                checkDiv.style.cursor = 'pointer';
+                checkDiv.style.fontSize = '11px';
+                checkDiv.style.padding = '4px';
+                checkDiv.style.background = '#252525';
+                checkDiv.style.borderRadius = '3px';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = effect.value;
+                checkbox.checked = layer.effects.includes(effect.value);
+                checkbox.style.width = 'auto';
+                checkbox.style.margin = '0';
+
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        if (!layer.effects.includes(effect.value)) {
+                            layer.effects.push(effect.value);
+                        }
+                    } else {
+                        layer.effects = layer.effects.filter(eff => eff !== effect.value);
+                    }
+                    this.updateSettings();
+                    this.saveToStorage();
+                });
+
+                const labelSpan = document.createElement('span');
+                labelSpan.textContent = effect.label;
+
+                checkDiv.appendChild(checkbox);
+                checkDiv.appendChild(labelSpan);
+                effectCheckboxes.appendChild(checkDiv);
+            });
+
+            effectDiv.appendChild(effectCheckboxes);
+            content.appendChild(effectDiv);
+
+            // Effect Settings
+            if (layer.effects.length > 0) {
+                const effectSettingsDiv = document.createElement('div');
+                effectSettingsDiv.innerHTML = `
+                    <label>Effekt Farbe <span class="color-preview" style="background: ${layer.effectColor}"></span></label>
+                    <input type="color" value="${layer.effectColor}" id="effect-color">
+                    <div class="inline-group">
+                        <div>
+                            <label>Speed <span class="label-value">${layer.effectSpeed.toFixed(1)}x</span></label>
+                            <input type="range" min="0.1" max="5" step="0.1" value="${layer.effectSpeed}" id="effect-speed">
+                        </div>
+                        <div>
+                            <label>Intensität <span class="label-value">${layer.effectIntensity}%</span></label>
+                            <input type="range" min="0" max="100" value="${layer.effectIntensity}" id="effect-intensity">
+                        </div>
+                    </div>
+                `;
+                content.appendChild(effectSettingsDiv);
+
+                document.getElementById('effect-color').addEventListener('change', (e) => {
+                    layer.effectColor = e.target.value;
+                    this.updateSettings();
+                    this.saveToStorage();
+                });
+
+                document.getElementById('effect-speed').addEventListener('input', (e) => {
+                    layer.effectSpeed = parseFloat(e.target.value);
+                    document.querySelector('#effect-speed').previousElementSibling.querySelector('.label-value').textContent = e.target.value + 'x';
+                    this.saveToStorage();
+                });
+
+                document.getElementById('effect-intensity').addEventListener('input', (e) => {
+                    layer.effectIntensity = parseInt(e.target.value);
+                    document.querySelector('#effect-intensity').previousElementSibling.querySelector('.label-value').textContent = e.target.value + '%';
+                    this.saveToStorage();
+                });
+            }
+
+            // Closed option for line
+            if (layer.shapeType === 'line') {
+                const closedBtn = document.createElement('button');
+                closedBtn.className = 'secondary';
+                closedBtn.textContent = layer.closed ? '🔒 Geschlossen' : '🔓 Offen';
+                closedBtn.onclick = () => {
+                    layer.closed = !layer.closed;
+                    this.updateSettings();
+                    this.saveToStorage();
+                };
+                content.appendChild(closedBtn);
+            }
+        }
+
+        loadVideoFromUrl() {
+            const urlInput = document.getElementById('video-url');
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('Bitte Video-URL eingeben');
+                return;
+            }
+            if (!this.activeLayer) return;
+            this.activeLayer.setVideo(url);
+            this.updateSettings();
+            this.saveToStorage();
+        }
+
+        loadImageFromUrl() {
+            const urlInput = document.getElementById('image-url');
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('Bitte Bild-URL eingeben');
+                return;
+            }
+            if (!this.activeLayer) return;
+            this.activeLayer.setImage(url);
+            this.updateSettings();
+            this.saveToStorage();
+        }
+
+        saveToStorage() {
+            const data = {
+                version: '4.0',
+                timestamp: Date.now(),
+                layerCounter: this.layerCounter,
+                layers: this.layers.map(l => l.serialize())
+            };
+            localStorage.setItem('projectionMapping', JSON.stringify(data));
+        }
+
+        loadFromStorage() {
+            try {
+                const stored = localStorage.getItem('projectionMapping');
+                if (!stored) return;
+                const data = JSON.parse(stored);
+                this.loadProject(data);
+                this.lastStorageState = stored;
+            } catch (e) {
+                console.error('Load error:', e);
+            }
+        }
+
+        loadProject(data) {
+            this.layers.forEach(l => {
+                if (l.videoElement) {
+                    l.videoElement.pause();
+                    l.videoElement.src = '';
+                }
+                if (l.imageElement) {
+                    l.imageElement.src = '';
+                }
+            });
+            this.layers = [];
+            this.activeLayer = null;
+
+            if (data.layerCounter) {
+                this.layerCounter = data.layerCounter;
+            }
+
+            data.layers.forEach(d => {
+                const layer = new Layer();
+                Object.assign(layer, d);
+                if (d.videoSrc) layer.setVideo(d.videoSrc);
+                if (d.imageSrc) layer.setImage(d.imageSrc);
+                this.layers.push(layer);
+            });
+            this.updateUI();
+        }
+
+        startAutoSave() {
+            setInterval(() => {
+                if (!this.isFullscreen && this.layers.length > 0) {
+                    this.saveToStorage();
+                }
+            }, 2000);
+        }
+
+        checkForStorageChanges() {
+            const current = localStorage.getItem('projectionMapping');
+            if (current && current !== this.lastStorageState) {
+                this.lastStorageState = current;
+                try {
+                    const data = JSON.parse(current);
+                    this.loadProject(data);
+                } catch (e) {
+                    console.error('Reload error:', e);
+                }
+            }
+        }
+
+        enterFullscreen() {
+            this.isFullscreen = true;
+            document.getElementById('container').classList.add('fullscreen');
+            document.documentElement.requestFullscreen().catch(e => console.log(e));
+
+            this.storageCheckInterval = setInterval(() => {
+                this.checkForStorageChanges();
+            }, 500);
+        }
+
+        exitFullscreen() {
+            this.isFullscreen = false;
+            document.getElementById('container').classList.remove('fullscreen');
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+            if (this.storageCheckInterval) {
+                clearInterval(this.storageCheckInterval);
+                this.storageCheckInterval = null;
+            }
+            this.updateUI();
+        }
+
+        resetZoom() {
+            this.zoom = 1.0;
+            this.panX = 0;
+            this.panY = 0;
+        }
+
+        saveToFile() {
+            const data = {
+                version: '4.0',
+                timestamp: new Date().toISOString(),
+                layerCounter: this.layerCounter,
+                layers: this.layers.map(l => l.serialize())
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `projection-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        loadFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    this.loadProject(data);
+                    this.saveToStorage();
+                    alert('✓ Projekt geladen');
+                } catch (err) {
+                    alert('✗ Fehler: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        clearAll() {
+            if (!confirm('Alles löschen?')) return;
+            this.layers.forEach(l => {
+                if (l.videoElement) {
+                    l.videoElement.pause();
+                    l.videoElement.src = '';
+                }
+                if (l.imageElement) {
+                    l.imageElement.src = '';
+                }
+            });
+            this.layers = [];
+            this.activeLayer = null;
+            this.mappingMode = false;
+            this.tempPoints = [];
+            this.layerCounter = 1;
+            this.updateUI();
+            this.saveToStorage();
+        }
+
+        draw() {
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+            // Apply zoom and pan transformation (only in edit mode)
+            if (!this.isFullscreen) {
+                this.ctx.save();
+                this.ctx.translate(this.panX, this.panY);
+                this.ctx.scale(this.zoom, this.zoom);
+            }
+
+            this.layers.forEach(l => {
+                if (l.visible) l.draw(this.ctx, this.time);
+            });
+
+            if (!this.isFullscreen && this.activeLayer && this.activeLayer.points.length > 0) {
+                this.drawLayerPoints(this.activeLayer);
+            }
+            if (this.mappingMode && this.tempPoints.length > 0) {
+                this.drawTempPoints();
+            }
+
+            if (!this.isFullscreen) {
+                this.ctx.restore();
+
+                // Draw zoom indicator
+                this.ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                this.ctx.font = '12px monospace';
+                this.ctx.fillText(`Zoom: ${Math.round(this.zoom * 100)}%`, 10, 20);
+            }
+        }
+
+        drawLayerPoints(layer) {
+            layer.points.forEach((p, i) => {
+                this.ctx.fillStyle = '#4CAF50';
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.stroke();
+                this.ctx.fillStyle = '#fff';
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = 'bold 11px Arial';
+                this.ctx.fillText(i + 1, p.x + 10, p.y - 10);
+            });
+
+            if (layer.points.length > 1) {
+                this.ctx.strokeStyle = 'rgba(76,175,80,0.3)';
+                this.ctx.lineWidth = 1;
+                this.ctx.setLineDash([4, 4]);
+                this.ctx.beginPath();
+                this.ctx.moveTo(layer.points[0].x, layer.points[0].y);
+                for (let i = 1; i < layer.points.length; i++) {
+                    this.ctx.lineTo(layer.points[i].x, layer.points[i].y);
+                }
+                if (layer.closed) {
+                    this.ctx.closePath();
+                }
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
+            }
+        }
+
+        drawTempPoints() {
+            this.ctx.strokeStyle = '#FFD700';
+            this.ctx.fillStyle = '#FFD700';
+            this.ctx.lineWidth = 2;
+            this.tempPoints.forEach((p, i) => {
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                this.ctx.fill();
+                if (i > 0) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.tempPoints[i-1].x, this.tempPoints[i-1].y);
+                    this.ctx.lineTo(p.x, p.y);
+                    this.ctx.stroke();
+                }
+            });
+        }
+
+        animate() {
+            this.time += 0.016;
+            this.draw();
+            requestAnimationFrame(() => this.animate());
+        }
+    }
+
+    class Layer {
+        constructor() {
+            this.name = 'Layer';
+            this.shapeType = 'line';
+            this.points = [];
+            this.closed = false;
+            this.visible = true;
+            this.opacity = 1.0;
+            this.scale = 1.0;
+
+            // Fill
+            this.fillType = 'none'; // 'none', 'color', 'video', 'image'
+            this.fillColor = '#ff0000';
+            this.videoSrc = null;
+            this.videoElement = null;
+            this.imageSrc = null;
+            this.imageElement = null;
+
+            // Stroke
+            this.hasStroke = true;
+            this.strokeColor = '#ffffff';
+            this.strokeWidth = 3;
+
+            // Effects - Array for multiple effects
+            this.effects = []; // Array of effect types
+            this.effectColor = '#00ff00';
+            this.effectSpeed = 1.0;
+            this.effectIntensity = 50;
+        }
+
+        setVideo(src) {
+            this.videoSrc = src;
+            if (this.videoElement) {
+                this.videoElement.pause();
+                this.videoElement.src = '';
+            }
+            this.videoElement = document.createElement('video');
+            this.videoElement.src = src;
+            this.videoElement.loop = true;
+            this.videoElement.muted = true;
+            this.videoElement.autoplay = true;
+            this.videoElement.crossOrigin = 'anonymous';
+            this.videoElement.play().catch(() => {
+                this.videoElement.crossOrigin = null;
+                this.videoElement.play().catch(() => {});
+            });
+        }
+
+        setImage(src) {
+            this.imageSrc = src;
+            this.imageElement = new Image();
+            this.imageElement.crossOrigin = 'anonymous';
+            this.imageElement.src = src;
+        }
+
+        draw(ctx, time) {
+            if (this.points.length < 2) return;
+
+            ctx.save();
+            ctx.globalAlpha = this.opacity;
+
+            // Check if we have wave effect active
+            const hasWave = this.effects && this.effects.includes('wave');
+
+            // Draw fill first (with wave transformation if active)
+            if (this.fillType !== 'none' && (this.closed || this.points.length >= 3)) {
+                if (hasWave && this.points.length === 4) {
+                    // Apply wave transformation to the video/image
+                    this.drawFillWithWave(ctx, time);
+                } else {
+                    this.drawFill(ctx);
+                }
+            }
+
+            // Draw stroke with effects
+            if (this.hasStroke) {
+                if (this.effects.length === 0) {
+                    // No effects - draw simple stroke
+                    this.drawStroke(ctx);
+                } else {
+                    // Apply all effects - some effects work better in combination
+                    // Wave and Travel can combine nicely
+                    const hasWave = this.effects.includes('wave');
+                    const hasTravel = this.effects.includes('travel');
+                    const hasPulse = this.effects.includes('pulse');
+                    const hasStrobe = this.effects.includes('strobe');
+                    const hasRainbow = this.effects.includes('rainbow');
+                    const hasBreathe = this.effects.includes('breathe');
+
+                    // Strobe affects everything
+                    if (hasStrobe) {
+                        const strobe = Math.floor(time * this.effectSpeed * 10) % 2;
+                        if (strobe === 0) {
+                            ctx.restore();
+                            return;
+                        }
+                    }
+
+                    // Special combination: Wave + Travel = travel follows the wavy path
+                    if (hasWave && hasTravel) {
+                        this.drawWaveTravelCombination(ctx, time);
+                    }
+                    // Rainbow overrides other color effects
+                    else if (hasRainbow) {
+                        this.drawRainbowEffect(ctx, time);
+                        if (hasTravel) {
+                            this.drawTravelEffect(ctx, time, true);
+                        }
+                    } else if (hasBreathe) {
+                        this.drawBreatheEffect(ctx, time);
+                        if (hasTravel) {
+                            this.drawTravelEffect(ctx, time, true);
+                        }
+                    } else if (hasPulse) {
+                        this.drawPulseEffect(ctx, time);
+                        if (hasTravel) {
+                            this.drawTravelEffect(ctx, time, true);
+                        }
+                    } else if (hasWave) {
+                        this.drawWaveEffect(ctx, time);
+                    } else if (hasTravel) {
+                        // Travel without other effects
+                        this.drawTravelEffect(ctx, time, false);
+                    } else {
+                        // Just stroke
+                        this.drawStroke(ctx);
+                    }
+                }
+            }
+
+            ctx.restore();
+        }
+
+        drawPulseEffect(ctx, time) {
+            const pulse = (Math.sin(time * this.effectSpeed * 2) + 1) / 2;
+            const color = this.interpolateColor(this.strokeColor, this.effectColor, pulse * this.effectIntensity / 100);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = this.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(this.points[0].x, this.points[0].y);
+            for (let i = 1; i < this.points.length; i++) {
+                ctx.lineTo(this.points[i].x, this.points[i].y);
+            }
+            if (this.closed) ctx.closePath();
+            ctx.stroke();
+        }
+
+        drawTravelEffect(ctx, time, skipBaseLine = false) {
+            // Base line (only if not already drawn by another effect)
+            if (!skipBaseLine) {
+                ctx.strokeStyle = this.strokeColor;
+                ctx.lineWidth = this.strokeWidth;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                ctx.beginPath();
+                ctx.moveTo(this.points[0].x, this.points[0].y);
+                for (let i = 1; i < this.points.length; i++) {
+                    ctx.lineTo(this.points[i].x, this.points[i].y);
+                }
+                if (this.closed) ctx.closePath();
+                ctx.stroke();
+            }
+
+            // Calculate segments
+            let total = 0;
+            const segs = [];
+            for (let i = 0; i < this.points.length - 1; i++) {
+                const len = Math.hypot(this.points[i+1].x - this.points[i].x, this.points[i+1].y - this.points[i].y);
+                segs.push({ s: total, e: total + len, i });
+                total += len;
+            }
+
+            if (this.closed && this.points.length > 2) {
+                const len = Math.hypot(this.points[0].x - this.points[this.points.length-1].x, this.points[0].y - this.points[this.points.length-1].y);
+                segs.push({ s: total, e: total + len, i: this.points.length - 1 });
+                total += len;
+            }
+
+            // Traveling effect
+            const pos = (time * this.effectSpeed * 100) % total;
+            const effLen = total * (this.effectIntensity / 100) * 0.2;
+
+            ctx.strokeStyle = this.effectColor;
+            ctx.lineWidth = this.strokeWidth * 1.5;
+
+            for (let seg of segs) {
+                let segStart = pos;
+                let segEnd = pos + effLen;
+
+                if (segEnd > total) {
+                    if (segStart < seg.e && seg.s < total) {
+                        const t1 = Math.max(0, (segStart - seg.s) / (seg.e - seg.s));
+                        const t2 = Math.min(1, (total - seg.s) / (seg.e - seg.s));
+                        const p1 = this.points[seg.i];
+                        const p2 = seg.i + 1 < this.points.length ? this.points[seg.i + 1] : this.points[0];
+                        if (t1 < t2) {
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x + (p2.x - p1.x) * t1, p1.y + (p2.y - p1.y) * t1);
+                            ctx.lineTo(p1.x + (p2.x - p1.x) * t2, p1.y + (p2.y - p1.y) * t2);
+                            ctx.stroke();
+                        }
+                    }
+                    segEnd = segEnd - total;
+                    if (segEnd > seg.s && seg.s >= 0) {
+                        const t1 = Math.max(0, (0 - seg.s) / (seg.e - seg.s));
+                        const t2 = Math.min(1, (segEnd - seg.s) / (seg.e - seg.s));
+                        const p1 = this.points[seg.i];
+                        const p2 = seg.i + 1 < this.points.length ? this.points[seg.i + 1] : this.points[0];
+                        if (t1 < t2) {
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x + (p2.x - p1.x) * t1, p1.y + (p2.y - p1.y) * t1);
+                            ctx.lineTo(p1.x + (p2.x - p1.x) * t2, p1.y + (p2.y - p1.y) * t2);
+                            ctx.stroke();
+                        }
+                    }
+                } else {
+                    if (segEnd >= seg.s && segStart <= seg.e) {
+                        const t1 = Math.max(0, (segStart - seg.s) / (seg.e - seg.s));
+                        const t2 = Math.min(1, (segEnd - seg.s) / (seg.e - seg.s));
+                        const p1 = this.points[seg.i];
+                        const p2 = seg.i + 1 < this.points.length ? this.points[seg.i + 1] : this.points[0];
+                        if (t1 < t2) {
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x + (p2.x - p1.x) * t1, p1.y + (p2.y - p1.y) * t1);
+                            ctx.lineTo(p1.x + (p2.x - p1.x) * t2, p1.y + (p2.y - p1.y) * t2);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+        }
+
+        drawWaveEffect(ctx, time) {
+            ctx.strokeStyle = this.strokeColor;
+            ctx.lineWidth = this.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const waveAmplitude = this.strokeWidth * 2 * (this.effectIntensity / 100);
+            const waveFrequency = 0.02;
+            const waveSpeed = time * this.effectSpeed;
+
+            ctx.beginPath();
+
+            for (let i = 0; i < this.points.length - 1; i++) {
+                const p1 = this.points[i];
+                const p2 = this.points[i + 1];
+
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const length = Math.hypot(dx, dy);
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI / 2;
+
+                const steps = Math.max(20, Math.floor(length / 5));
+                for (let step = 0; step <= steps; step++) {
+                    const t = step / steps;
+                    const baseX = p1.x + dx * t;
+                    const baseY = p1.y + dy * t;
+                    const distanceAlongPath = i * 100 + t * length;
+                    const wave = Math.sin((distanceAlongPath * waveFrequency) + waveSpeed) * waveAmplitude;
+                    const x = baseX + Math.cos(perpAngle) * wave;
+                    const y = baseY + Math.sin(perpAngle) * wave;
+
+                    if (step === 0 && i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+
+            if (this.closed && this.points.length > 2) {
+                const p1 = this.points[this.points.length - 1];
+                const p2 = this.points[0];
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const length = Math.hypot(dx, dy);
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI / 2;
+
+                const steps = Math.max(20, Math.floor(length / 5));
+                for (let step = 1; step <= steps; step++) {
+                    const t = step / steps;
+                    const baseX = p1.x + dx * t;
+                    const baseY = p1.y + dy * t;
+                    const distanceAlongPath = (this.points.length - 1) * 100 + t * length;
+                    const wave = Math.sin((distanceAlongPath * waveFrequency) + waveSpeed) * waveAmplitude;
+                    const x = baseX + Math.cos(perpAngle) * wave;
+                    const y = baseY + Math.sin(perpAngle) * wave;
+                    ctx.lineTo(x, y);
+                }
+            }
+
+            ctx.stroke();
+        }
+
+        drawWaveTravelCombination(ctx, time) {
+            // First calculate the wavy path points
+            const waveAmplitude = this.strokeWidth * 2 * (this.effectIntensity / 100);
+            const waveFrequency = 0.02;
+            const waveSpeed = time * this.effectSpeed;
+
+            const wavyPoints = [];
+            let totalLength = 0;
+            const segmentLengths = [];
+
+            // Generate wavy path
+            for (let i = 0; i < this.points.length - 1; i++) {
+                const p1 = this.points[i];
+                const p2 = this.points[i + 1];
+
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const length = Math.hypot(dx, dy);
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI / 2;
+
+                const steps = Math.max(20, Math.floor(length / 5));
+                for (let step = 0; step <= steps; step++) {
+                    const t = step / steps;
+                    const baseX = p1.x + dx * t;
+                    const baseY = p1.y + dy * t;
+                    const distanceAlongPath = i * 100 + t * length;
+                    const wave = Math.sin((distanceAlongPath * waveFrequency) + waveSpeed) * waveAmplitude;
+                    const x = baseX + Math.cos(perpAngle) * wave;
+                    const y = baseY + Math.sin(perpAngle) * wave;
+
+                    if (wavyPoints.length > 0) {
+                        const lastPoint = wavyPoints[wavyPoints.length - 1];
+                        const segLen = Math.hypot(x - lastPoint.x, y - lastPoint.y);
+                        totalLength += segLen;
+                        segmentLengths.push(segLen);
+                    }
+
+                    wavyPoints.push({ x, y });
+                }
+            }
+
+            if (this.closed && this.points.length > 2) {
+                const p1 = this.points[this.points.length - 1];
+                const p2 = this.points[0];
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const length = Math.hypot(dx, dy);
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI / 2;
+
+                const steps = Math.max(20, Math.floor(length / 5));
+                for (let step = 1; step <= steps; step++) {
+                    const t = step / steps;
+                    const baseX = p1.x + dx * t;
+                    const baseY = p1.y + dy * t;
+                    const distanceAlongPath = (this.points.length - 1) * 100 + t * length;
+                    const wave = Math.sin((distanceAlongPath * waveFrequency) + waveSpeed) * waveAmplitude;
+                    const x = baseX + Math.cos(perpAngle) * wave;
+                    const y = baseY + Math.sin(perpAngle) * wave;
+
+                    const lastPoint = wavyPoints[wavyPoints.length - 1];
+                    const segLen = Math.hypot(x - lastPoint.x, y - lastPoint.y);
+                    totalLength += segLen;
+                    segmentLengths.push(segLen);
+
+                    wavyPoints.push({ x, y });
+                }
+            }
+
+            // Draw base wavy line
+            ctx.strokeStyle = this.strokeColor;
+            ctx.lineWidth = this.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(wavyPoints[0].x, wavyPoints[0].y);
+            for (let i = 1; i < wavyPoints.length; i++) {
+                ctx.lineTo(wavyPoints[i].x, wavyPoints[i].y);
+            }
+            ctx.stroke();
+
+            // Draw traveling highlight on the wavy path
+            const travelPos = (time * this.effectSpeed * 100) % totalLength;
+            const effectLength = totalLength * (this.effectIntensity / 100) * 0.2;
+
+            ctx.strokeStyle = this.effectColor;
+            ctx.lineWidth = this.strokeWidth * 1.5;
+
+            // Find which segments to highlight
+            let accumulatedLength = 0;
+            let startIdx = -1;
+            let endIdx = -1;
+
+            for (let i = 0; i < segmentLengths.length; i++) {
+                const nextLength = accumulatedLength + segmentLengths[i];
+
+                if (startIdx === -1 && travelPos >= accumulatedLength && travelPos < nextLength) {
+                    startIdx = i;
+                }
+
+                if (startIdx !== -1 && (travelPos + effectLength) >= accumulatedLength && (travelPos + effectLength) <= nextLength) {
+                    endIdx = i;
+                    break;
+                }
+
+                accumulatedLength = nextLength;
+            }
+
+            // Handle wrapping
+            if (startIdx !== -1) {
+                ctx.beginPath();
+
+                if (endIdx === -1 || endIdx < startIdx) {
+                    // Draw from startIdx to end
+                    const firstPoint = wavyPoints[startIdx];
+                    ctx.moveTo(firstPoint.x, firstPoint.y);
+                    for (let i = startIdx + 1; i < wavyPoints.length; i++) {
+                        ctx.lineTo(wavyPoints[i].x, wavyPoints[i].y);
+                    }
+
+                    // Wrap around to beginning
+                    if (this.closed) {
+                        const remaining = effectLength - (totalLength - travelPos);
+                        accumulatedLength = 0;
+                        for (let i = 0; i < segmentLengths.length; i++) {
+                            if (accumulatedLength + segmentLengths[i] >= remaining) {
+                                endIdx = i;
+                                break;
+                            }
+                            accumulatedLength += segmentLengths[i];
+                        }
+
+                        if (endIdx !== -1) {
+                            ctx.moveTo(wavyPoints[0].x, wavyPoints[0].y);
+                            for (let i = 1; i <= endIdx + 1 && i < wavyPoints.length; i++) {
+                                ctx.lineTo(wavyPoints[i].x, wavyPoints[i].y);
+                            }
+                        }
+                    }
+                } else {
+                    // Simple case: draw from start to end
+                    const firstPoint = wavyPoints[startIdx];
+                    ctx.moveTo(firstPoint.x, firstPoint.y);
+                    for (let i = startIdx + 1; i <= endIdx + 1 && i < wavyPoints.length; i++) {
+                        ctx.lineTo(wavyPoints[i].x, wavyPoints[i].y);
+                    }
+                }
+
+                ctx.stroke();
+            }
+        }
+
+        drawRainbowEffect(ctx, time) {
+            ctx.lineWidth = this.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const segments = this.points.length - 1;
+            for (let i = 0; i < segments; i++) {
+                const hue = ((time * this.effectSpeed * 50 + i * 360 / segments) % 360);
+                const saturation = this.effectIntensity;
+                ctx.strokeStyle = `hsl(${hue}, ${saturation}%, 50%)`;
+
+                ctx.beginPath();
+                ctx.moveTo(this.points[i].x, this.points[i].y);
+                ctx.lineTo(this.points[i + 1].x, this.points[i + 1].y);
+                ctx.stroke();
+            }
+
+            if (this.closed && this.points.length > 2) {
+                const hue = ((time * this.effectSpeed * 50 + segments * 360 / segments) % 360);
+                const saturation = this.effectIntensity;
+                ctx.strokeStyle = `hsl(${hue}, ${saturation}%, 50%)`;
+                ctx.beginPath();
+                ctx.moveTo(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y);
+                ctx.lineTo(this.points[0].x, this.points[0].y);
+                ctx.stroke();
+            }
+        }
+
+        drawBreatheEffect(ctx, time) {
+            const breathe = (Math.sin(time * this.effectSpeed * 0.5) + 1) / 2;
+            const color = this.interpolateColor(this.strokeColor, this.effectColor, breathe * this.effectIntensity / 100);
+            const width = this.strokeWidth * (0.5 + breathe * 0.5);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(this.points[0].x, this.points[0].y);
+            for (let i = 1; i < this.points.length; i++) {
+                ctx.lineTo(this.points[i].x, this.points[i].y);
+            }
+            if (this.closed) ctx.closePath();
+            ctx.stroke();
+        }
+
+        interpolateColor(c1, c2, t) {
+            const r1 = parseInt(c1.substr(1, 2), 16);
+            const g1 = parseInt(c1.substr(3, 2), 16);
+            const b1 = parseInt(c1.substr(5, 2), 16);
+            const r2 = parseInt(c2.substr(1, 2), 16);
+            const g2 = parseInt(c2.substr(3, 2), 16);
+            const b2 = parseInt(c2.substr(5, 2), 16);
+            const r = Math.round(r1 + (r2 - r1) * t);
+            const g = Math.round(g1 + (g2 - g1) * t);
+            const b = Math.round(b1 + (b2 - b1) * t);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        drawFill(ctx) {
+            ctx.beginPath();
+            ctx.moveTo(this.points[0].x, this.points[0].y);
+            for (let i = 1; i < this.points.length; i++) {
+                ctx.lineTo(this.points[i].x, this.points[i].y);
+            }
+            if (this.closed) ctx.closePath();
+
+            if (this.fillType === 'color') {
+                ctx.fillStyle = this.fillColor;
+                ctx.fill();
+            } else if (this.fillType === 'video' && this.videoElement && this.videoElement.readyState >= 2) {
+                this.drawMediaFillWithTransform(ctx, this.videoElement);
+            } else if (this.fillType === 'image' && this.imageElement && this.imageElement.complete) {
+                this.drawMediaFillWithTransform(ctx, this.imageElement);
+            }
+        }
+
+        drawFillWithWave(ctx, time) {
+            // Wave transformation for video/image/color fill
+            const [p1, p2, p3, p4] = this.points;
+
+            // Get media
+            let media = null;
+            if (this.fillType === 'video' && this.videoElement && this.videoElement.readyState >= 2) {
+                media = this.videoElement;
+            } else if (this.fillType === 'image' && this.imageElement && this.imageElement.complete) {
+                media = this.imageElement;
+            } else if (this.fillType === 'color') {
+                this.drawColorFillWithWave(ctx, time);
+                return;
+            }
+
+            if (!media) return;
+
+            const vw = media.videoWidth || media.width;
+            const vh = media.videoHeight || media.height;
+            if (vw === 0 || vh === 0) return;
+
+            ctx.save();
+
+            // Higher subdivision for smoother wave on video
+            const subdivisions = 8;
+
+            for (let row = 0; row < subdivisions; row++) {
+                for (let col = 0; col < subdivisions; col++) {
+                    const u0 = col / subdivisions;
+                    const v0 = row / subdivisions;
+                    const u1 = (col + 1) / subdivisions;
+                    const v1 = (row + 1) / subdivisions;
+
+                    // Source rectangle in video
+                    const sx = u0 * vw;
+                    const sy = v0 * vh;
+                    const sw = (u1 - u0) * vw;
+                    const sh = (v1 - v0) * vh;
+
+                    // Calculate destination quad corners with wave distortion
+                    const tl = this.getWavyPoint(p1, p2, p3, p4, u0, v0, time);
+                    const tr = this.getWavyPoint(p1, p2, p3, p4, u1, v0, time);
+                    const bl = this.getWavyPoint(p1, p2, p3, p4, u0, v1, time);
+
+                    ctx.save();
+
+                    // Calculate 2D transform matrix
+                    const dx1 = tr.x - tl.x;
+                    const dy1 = tr.y - tl.y;
+                    const dx2 = bl.x - tl.x;
+                    const dy2 = bl.y - tl.y;
+
+                    ctx.setTransform(dx1, dy1, dx2, dy2, tl.x, tl.y);
+
+                    try {
+                        ctx.drawImage(media, sx, sy, sw, sh, 0, 0, 1, 1);
+                    } catch (e) {}
+
+                    ctx.restore();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        getWavyPoint(p1, p2, p3, p4, u, v, time) {
+            // Bilinear interpolation for base position
+            const baseX = (1-u)*(1-v)*p1.x + u*(1-v)*p2.x + (1-u)*v*p4.x + u*v*p3.x;
+            const baseY = (1-u)*(1-v)*p1.y + u*(1-v)*p2.y + (1-u)*v*p4.y + u*v*p3.y;
+
+            const waveAmplitude = this.strokeWidth * 2 * (this.effectIntensity / 100);
+            const waveFrequency = 0.02;
+            const waveSpeed = time * this.effectSpeed;
+
+            // Calculate perpendicular direction for wave
+            // Use gradient along u direction
+            const dxdu = -(1-v)*p1.x + (1-v)*p2.x - v*p4.x + v*p3.x;
+            const dydu = -(1-v)*p1.y + (1-v)*p2.y - v*p4.y + v*p3.y;
+
+            const angle = Math.atan2(dydu, dxdu);
+            const perpAngle = angle + Math.PI / 2;
+
+            // Calculate wave offset based on position
+            const distanceAlongPath = (u + v) * 100;
+            const wave = Math.sin((distanceAlongPath * waveFrequency) + waveSpeed) * waveAmplitude;
+
+            return {
+                x: baseX + Math.cos(perpAngle) * wave,
+                y: baseY + Math.sin(perpAngle) * wave
+            };
+        }
+
+        drawColorFillWithWave(ctx, time) {
+            // For color fills, create a wavy polygon
+            const [p1, p2, p3, p4] = this.points;
+
+            const steps = 30;
+            const wavyPoints = [];
+
+            // Top edge
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                wavyPoints.push(this.getWavyPoint(p1, p2, p3, p4, t, 0, time));
+            }
+            // Right edge
+            for (let i = 1; i <= steps; i++) {
+                const t = i / steps;
+                wavyPoints.push(this.getWavyPoint(p1, p2, p3, p4, 1, t, time));
+            }
+            // Bottom edge
+            for (let i = steps - 1; i >= 0; i--) {
+                const t = i / steps;
+                wavyPoints.push(this.getWavyPoint(p1, p2, p3, p4, t, 1, time));
+            }
+            // Left edge
+            for (let i = steps - 1; i > 0; i--) {
+                const t = i / steps;
+                wavyPoints.push(this.getWavyPoint(p1, p2, p3, p4, 0, t, time));
+            }
+
+            ctx.fillStyle = this.fillColor;
+            ctx.beginPath();
+            ctx.moveTo(wavyPoints[0].x, wavyPoints[0].y);
+            for (let i = 1; i < wavyPoints.length; i++) {
+                ctx.lineTo(wavyPoints[i].x, wavyPoints[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        drawMediaFillWithTransform(ctx, media) {
+            // For 4-point shapes (quads), use subdivision transform for proper perspective
+            if (this.points.length === 4) {
+                this.drawQuadWithSubdivision(ctx, media);
+                return;
+            }
+
+            // For other shapes, use simple clip-based fill
+            ctx.save();
+            ctx.clip();
+
+            const minX = Math.min(...this.points.map(p => p.x));
+            const minY = Math.min(...this.points.map(p => p.y));
+            const maxX = Math.max(...this.points.map(p => p.x));
+            const maxY = Math.max(...this.points.map(p => p.y));
+
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            const mediaAspect = media.videoWidth ? media.videoWidth / media.videoHeight : media.width / media.height;
+            const boxAspect = width / height;
+
+            let drawWidth, drawHeight, drawX, drawY;
+
+            if (mediaAspect > boxAspect) {
+                drawHeight = height;
+                drawWidth = height * mediaAspect;
+                drawX = minX - (drawWidth - width) / 2;
+                drawY = minY;
+            } else {
+                drawWidth = width;
+                drawHeight = width / mediaAspect;
+                drawX = minX;
+                drawY = minY - (drawHeight - height) / 2;
+            }
+
+            try {
+                ctx.drawImage(media, drawX, drawY, drawWidth, drawHeight);
+            } catch (e) {}
+
+            ctx.restore();
+        }
+
+        drawQuadWithSubdivision(ctx, media) {
+            const [p1, p2, p3, p4] = this.points;
+            const vw = media.videoWidth || media.width;
+            const vh = media.videoHeight || media.height;
+
+            if (vw === 0 || vh === 0) {
+                return;
+            }
+
+            ctx.save();
+
+            // Create clipping path for the quad shape (overflow: hidden)
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p4.x, p4.y);
+            ctx.closePath();
+            ctx.clip();
+
+            // Use 4x4 subdivisions with overlap to prevent gaps
+            const subdivisions = 4;
+            const overlap = 3;
+
+            for (let row = 0; row < subdivisions; row++) {
+                for (let col = 0; col < subdivisions; col++) {
+                    const u0 = col / subdivisions;
+                    const v0 = row / subdivisions;
+                    const u1 = (col + 1) / subdivisions;
+                    const v1 = (row + 1) / subdivisions;
+
+                    // Source rectangle in video with overlap
+                    const sx = Math.max(0, u0 * vw - overlap);
+                    const sy = Math.max(0, v0 * vh - overlap);
+                    const sw = Math.min(vw - sx, (u1 - u0) * vw + overlap * 2);
+                    const sh = Math.min(vh - sy, (v1 - v0) * vh + overlap * 2);
+
+                    // Destination quad corners (bilinear interpolation)
+                    const tl = {
+                        x: (1-u0)*(1-v0)*p1.x + u0*(1-v0)*p2.x + (1-u0)*v0*p4.x + u0*v0*p3.x,
+                        y: (1-u0)*(1-v0)*p1.y + u0*(1-v0)*p2.y + (1-u0)*v0*p4.y + u0*v0*p3.y
+                    };
+                    const tr = {
+                        x: (1-u1)*(1-v0)*p1.x + u1*(1-v0)*p2.x + (1-u1)*v0*p4.x + u1*v0*p3.x,
+                        y: (1-u1)*(1-v0)*p1.y + u1*(1-v0)*p2.y + (1-u1)*v0*p4.y + u1*v0*p3.y
+                    };
+                    const bl = {
+                        x: (1-u0)*(1-v1)*p1.x + u0*(1-v1)*p2.x + (1-u0)*v1*p4.x + u0*v1*p3.x,
+                        y: (1-u0)*(1-v1)*p1.y + u0*(1-v1)*p2.y + (1-u0)*v1*p4.y + u0*v1*p3.y
+                    };
+
+                    ctx.save();
+
+                    // Calculate 2D transform matrix for this quad
+                    const dx1 = tr.x - tl.x;
+                    const dy1 = tr.y - tl.y;
+                    const dx2 = bl.x - tl.x;
+                    const dy2 = bl.y - tl.y;
+
+                    // Apply transform to map unit square to quad
+                    ctx.setTransform(dx1, dy1, dx2, dy2, tl.x, tl.y);
+
+                    try {
+                        // Draw video part into unit square [0,0] to [1,1]
+                        ctx.drawImage(media, sx, sy, sw, sh, 0, 0, 1, 1);
+                    } catch (e) {}
+
+                    ctx.restore();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        drawStroke(ctx) {
+            ctx.strokeStyle = this.strokeColor;
+            ctx.lineWidth = this.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(this.points[0].x, this.points[0].y);
+            for (let i = 1; i < this.points.length; i++) {
+                ctx.lineTo(this.points[i].x, this.points[i].y);
+            }
+            if (this.closed) ctx.closePath();
+            ctx.stroke();
+        }
+
+        serialize() {
+            return {
+                name: this.name,
+                shapeType: this.shapeType,
+                points: this.points,
+                closed: this.closed,
+                visible: this.visible,
+                opacity: this.opacity,
+                scale: this.scale,
+                fillType: this.fillType,
+                fillColor: this.fillColor,
+                videoSrc: this.videoSrc,
+                imageSrc: this.imageSrc,
+                hasStroke: this.hasStroke,
+                strokeColor: this.strokeColor,
+                strokeWidth: this.strokeWidth,
+                effects: this.effects,
+                effectColor: this.effectColor,
+                effectSpeed: this.effectSpeed,
+                effectIntensity: this.effectIntensity
+            };
+        }
+    }
+
+    const app = new ProjectionMappingApp();
+</script>
+</body>
+</html>
