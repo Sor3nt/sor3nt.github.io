@@ -13,10 +13,15 @@
                 name: 'LilyGo T-Embed CC1101',
                 chip: 'ESP32-S3',
                 flashSize: '16MB',
+                // Multi-boot image: ota_0 = this firmware (boots by default),
+                // ota_1 = Bruce. otadata is reset (ota_data_initial.bin) so the
+                // bootloader picks ota_0. Switch in-device via the "Other OS" menu.
                 parts: [
                     { path: 'release/t-embed/latest/bootloader.bin', offset: 0x0 },
                     { path: 'release/t-embed/latest/partition-table.bin', offset: 0x8000 },
-                    { path: 'release/t-embed/latest/furi_esp32.bin', offset: 0x10000 },
+                    { path: 'release/t-embed/latest/ota_data_initial.bin', offset: 0xf000 },
+                    { path: 'release/t-embed/latest/furi_esp32.bin', offset: 0x20000 },
+                    { path: 'release/t-embed/latest/bruce.bin', offset: 0x520000 },
                 ],
             },
             'waveshare-c6': {
@@ -509,7 +514,7 @@
                 <div class="board-icon">&#9881;</div>
                 <div class="board-info">
                     <h3>LilyGo T-Embed & CC1101 & Plus</h3>
-                    <p>Sub-GHz &bull; NRF &bull; Wifi &bull; BLE &bull; NFC &bull; IR &bull; Audio &bull; FAP &bull; mJS</p>
+                    <p>Sub-GHz &bull; NRF &bull; Wifi &bull; BLE &bull; NFC &bull; IR &bull; Audio &bull; FAP &bull; mJS &bull; Bruce dual-boot</p>
                 </div>
             </div>
             <div id="board-waveshare-c6" class="board-card" onclick="selectBoard('waveshare-c6')">
@@ -553,7 +558,7 @@
     <div id="screen-success" class="screen">
         <div class="success-icon">&#10003;</div>
         <div class="success-text">Success!</div>
-        <p class="success-sub">Firmware flashed successfully!.<br>Your device is rebooting.</p>
+        <p class="success-sub">Firmware flashed successfully!<br>Your device is rebooting.<br><br><small style="color:#555">T-Embed: Bruce is flashed alongside &mdash; switch via the "Other OS" menu entry.</small></p>
     </div>
 </div>
 <center>

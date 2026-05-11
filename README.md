@@ -282,6 +282,33 @@
                 </a>
             </div>
         </div>
+        <div class="project-card">
+            <div class="project-header">
+                <span class="project-number">#04</span>
+                <h2 class="project-title">Flipper Zero &mdash; ESP32 Port &amp; Web Flasher</h2>
+            </div>
+            <p class="project-description">
+                Port of the Flipper Zero firmware to ESP32 boards (LilyGo T-Embed CC1101, Waveshare ESP32-C6-LCD).
+                Browser-based flasher over WebSerial &mdash; no toolchain, no esptool, just Chrome/Edge.
+                The T-Embed image is a multi-boot bundle: this firmware in <code>ota_0</code> and the
+                Bruce firmware in <code>ota_1</code>, switchable in-device via the "Other OS" menu entry.
+            </p>
+            <div class="project-tech">
+                <span class="tech-tag">ESP32-S3 / C6</span>
+                <span class="tech-tag">WebSerial</span>
+                <span class="tech-tag">esptool-js</span>
+                <span class="tech-tag">Firmware</span>
+                <span class="tech-tag">Multi-boot</span>
+            </div>
+            <div class="project-links">
+                <a href="interface.html" class="project-link">
+                    <svg viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M9.504.43a.75.75 0 0 1 .394.852l-1.318 5.31h2.86a.75.75 0 0 1 .582 1.219l-7 8.5a.75.75 0 0 1-1.329-.605l1.244-5.012H2.75a.75.75 0 0 1-.564-1.243L8.71.71A.75.75 0 0 1 9.504.43Z"/>
+                    </svg>
+                    Flash Firmware
+                </a>
+            </div>
+        </div>
     </div>
 
     <footer>
