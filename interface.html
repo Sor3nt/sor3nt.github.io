@@ -21,7 +21,7 @@
                     { path: 'release/t-embed/latest/partition-table.bin', offset: 0x8000 },
                     { path: 'release/t-embed/latest/ota_data_initial.bin', offset: 0xf000 },
                     { path: 'release/t-embed/latest/furi_esp32.bin', offset: 0x20000 },
-                    { path: 'release/t-embed/latest/bruce.bin', offset: 0x520000 },
+                    { path: 'release/t-embed/latest/bruce.bin', offset: 0x520000, bruce: true },
                 ],
             },
             'waveshare-c6': {
@@ -64,8 +64,17 @@
             document.querySelectorAll('.board-card').forEach(c => c.classList.remove('selected'));
             $('board-' + key).classList.add('selected');
 
+            // Bruce dual-boot is T-Embed only; default to flashing it.
+            const bruceOpt = $('bruce-option');
+            if (key === 't-embed') {
+                bruceOpt.style.display = 'inline-flex';
+                $('bruce-toggle').checked = true;
+            } else {
+                bruceOpt.style.display = 'none';
+            }
+
             $('connect-info').textContent = `Connect your ${selectedBoard.name} via USB to get started.`;
-            $('connect-chip').innerHTML = `${selectedBoard.chip} &bull; USB-C &bull; WebSerial`;
+            // $('connect-chip').innerHTML = `${selectedBoard.chip} &bull; USB-C &bull; WebSerial`;
             $('connect-btn').disabled = false;
             showScreen('screen-connect');
         }
@@ -124,6 +133,12 @@
             const progressText = $('progress-text');
             const board = selectedBoard;
 
+            // Drop the Bruce image when the user opted out of dual-boot.
+            const includeBruce = $('bruce-toggle').checked;
+            const parts = board.parts.filter(p => !p.bruce || includeBruce);
+            // Show the dual-boot hint only when a Bruce image is actually flashed.
+            $('bruce-note').style.display = parts.some(p => p.bruce) ? 'block' : 'none';
+
             try {
                 const esploader = new ESPLoader({
                     transport,
@@ -143,7 +158,7 @@
                 const fileArray = [];
                 let totalSize = 0;
 
-                for (const part of board.parts) {
+                for (const part of parts) {
                     progressText.textContent = `Loading ${part.path.split('/').pop()}...`;
                     const resp = await fetch(part.path);
                     if (!resp.ok) throw new Error(`Failed to load ${part.path}: ${resp.status}`);
@@ -165,7 +180,7 @@
                     reportProgress: (idx, written, total) => {
                         const pct = Math.round((written / total) * 100);
                         progress.style.width = pct + '%';
-                        progressText.textContent = `Flashing part ${idx + 1}/${board.parts.length}... ${pct}%`;
+                        progressText.textContent = `Flashing part ${idx + 1}/${parts.length}... ${pct}%`;
                     },
                 });
 
@@ -210,9 +225,10 @@
         window.selectBoard = selectBoard;
         window.goBack = goBack;
 
-        // Check WebSerial support
+        // Check WebSerial support. Only the flashable boards (those with an
+        // onclick handler) get disabled — external links stay clickable.
         if (!('serial' in navigator)) {
-            document.querySelectorAll('.board-card').forEach(c => c.style.pointerEvents = 'none');
+            document.querySelectorAll('.board-card[onclick]').forEach(c => c.style.pointerEvents = 'none');
             setError('Use Google Chrome or Edge on desktop to flash.');
         }
     </script>
@@ -290,6 +306,8 @@
             display: flex;
             align-items: center;
             gap: 18px;
+            text-decoration: none;
+            color: inherit;
         }
         .board-card:hover {
             border-color: #ff8c00;
@@ -379,6 +397,25 @@
             margin-top: 20px;
         }
 
+        /* Bruce dual-boot toggle (T-Embed only) */
+        .bruce-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-top: 20px;
+            color: #999;
+            font-size: 0.85rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        .bruce-option input {
+            width: 16px;
+            height: 16px;
+            accent-color: #ff8c00;
+            cursor: pointer;
+        }
+        .bruce-option strong { color: #ff8c00; font-weight: 600; }
+
         /* Screen 2: Flashing */
         .flash-info {
             color: #bbb;
@@ -425,6 +462,63 @@
         .success-sub {
             color: #666;
             font-size: 0.9rem;
+        }
+        /* SD-card setup info box + download CTA (success screen) */
+        .info-box {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-left: 3px solid #ff8c00;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin: 24px 0 22px;
+            text-align: left;
+        }
+        .info-box h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ff8c00;
+            margin-bottom: 10px;
+        }
+        .info-box p {
+            font-size: 0.85rem;
+            color: #aaa;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .info-box ol {
+            margin: 0;
+            padding-left: 20px;
+            color: #bbb;
+            font-size: 0.85rem;
+            line-height: 1.7;
+        }
+        .info-box code {
+            background: #000;
+            border: 1px solid #2a2a2a;
+            border-radius: 5px;
+            padding: 1px 6px;
+            font-size: 0.8rem;
+            color: #ff8c00;
+        }
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #ff8c00;
+            color: #000;
+            font-size: 1.05rem;
+            font-weight: 700;
+            padding: 16px 36px;
+            border-radius: 14px;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 16px rgba(255,140,0,0.25);
+        }
+        .cta-btn:hover { background: #ff9f2e; transform: scale(1.03); }
+        .cta-size {
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.7;
         }
         /* Discord button */
         .discord-btn {
@@ -513,7 +607,7 @@
             <div id="board-t-embed" class="board-card" onclick="selectBoard('t-embed')">
                 <div class="board-icon">&#9881;</div>
                 <div class="board-info">
-                    <h3>LilyGo T-Embed & CC1101 & Plus</h3>
+                    <h3>LilyGo T-Embed CC1101 & Plus</h3>
                     <p>Sub-GHz &bull; NRF &bull; Wifi &bull; BLE &bull; NFC &bull; IR &bull; Audio &bull; FAP &bull; mJS &bull; Bruce dual-boot</p>
                 </div>
             </div>
@@ -524,6 +618,13 @@
                     <p>ESP32-C6 &bull; Wifi &bull; BLE &bull; Touch</p>
                 </div>
             </div>
+            <a href="https://trollmaster419.github.io/" target="_blank" rel="noopener" class="board-card">
+                <div class="board-icon">&#9881;</div>
+                <div class="board-info">
+                    <h3>M5StickC Plus2</h3>
+                    <p>WIP</p>
+                </div>
+            </a>
         </div>
     </div>
 
@@ -539,6 +640,12 @@
         </button>
 
         <div id="connect-chip" class="chip"></div>
+
+        <label id="bruce-option" class="bruce-option" style="display:none">
+            <input type="checkbox" id="bruce-toggle" checked>
+            <span>Also flash <strong>Bruce</strong> (dual-boot)</span>
+        </label>
+
         <br>
         <button class="btn-back" onclick="goBack()">&larr; Change board</button>
     </div>
@@ -558,7 +665,23 @@
     <div id="screen-success" class="screen">
         <div class="success-icon">&#10003;</div>
         <div class="success-text">Success!</div>
-        <p class="success-sub">Firmware flashed successfully!<br>Your device is rebooting.<br><br><small style="color:#555">T-Embed: Bruce is flashed alongside &mdash; switch via the "Other OS" menu entry.</small></p>
+        <p class="success-sub">Firmware flashed &mdash; your device is rebooting.</p>
+
+        <div class="info-box">
+            <h3>&#128190; One more step: set up the SD card</h3>
+            <p>This firmware needs a <strong>FAT32-formatted microSD card</strong> for apps, assets, IR libraries, dolphin animations and more.</p>
+            <ol>
+                <li>Download <code>sdcard.zip</code> below</li>
+                <li>Extract <strong>its contents</strong> onto the root of the SD card</li>
+                <li>Insert the card into your device</li>
+            </ol>
+        </div>
+
+        <a href="release/t-embed/latest/sdcard.zip" download class="cta-btn">
+            &#11015; Download sdcard.zip <span class="cta-size">~10 MB</span>
+        </a>
+
+        <p id="bruce-note" class="success-sub" style="margin-top:22px"><small style="color:#555">T-Embed: Bruce is flashed alongside &mdash; switch via the "Other OS" menu entry.</small></p>
     </div>
 </div>
 <center>
