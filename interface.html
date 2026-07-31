@@ -13,15 +13,11 @@
                 name: 'LilyGo T-Embed CC1101',
                 chip: 'ESP32-S3',
                 flashSize: '16MB',
-                // Multi-boot image: ota_0 = this firmware (boots by default),
-                // ota_1 = Bruce. otadata is reset (ota_data_initial.bin) so the
-                // bootloader picks ota_0. Switch in-device via the "Other OS" menu.
+                // Single-app image: factory app at 0x10000 (partitions_singleapp_16mb.csv).
                 parts: [
                     { path: 'release/t-embed/latest/bootloader.bin', offset: 0x0 },
                     { path: 'release/t-embed/latest/partition-table.bin', offset: 0x8000 },
-                    { path: 'release/t-embed/latest/ota_data_initial.bin', offset: 0xf000 },
-                    { path: 'release/t-embed/latest/furi_esp32.bin', offset: 0x20000 },
-                    { path: 'release/t-embed/latest/bruce.bin', offset: 0x520000, bruce: true },
+                    { path: 'release/t-embed/latest/furi_esp32.bin', offset: 0x10000 },
                 ],
             },
             'waveshare-c6': {
@@ -63,15 +59,6 @@
 
             document.querySelectorAll('.board-card').forEach(c => c.classList.remove('selected'));
             $('board-' + key).classList.add('selected');
-
-            // Bruce dual-boot is T-Embed only; default to flashing it.
-            const bruceOpt = $('bruce-option');
-            if (key === 't-embed') {
-                bruceOpt.style.display = 'inline-flex';
-                $('bruce-toggle').checked = true;
-            } else {
-                bruceOpt.style.display = 'none';
-            }
 
             $('connect-info').textContent = `Connect your ${selectedBoard.name} via USB to get started.`;
             // $('connect-chip').innerHTML = `${selectedBoard.chip} &bull; USB-C &bull; WebSerial`;
@@ -132,12 +119,7 @@
             const progress = $('progress-bar');
             const progressText = $('progress-text');
             const board = selectedBoard;
-
-            // Drop the Bruce image when the user opted out of dual-boot.
-            const includeBruce = $('bruce-toggle').checked;
-            const parts = board.parts.filter(p => !p.bruce || includeBruce);
-            // Show the dual-boot hint only when a Bruce image is actually flashed.
-            $('bruce-note').style.display = parts.some(p => p.bruce) ? 'block' : 'none';
+            const parts = board.parts;
 
             try {
                 const esploader = new ESPLoader({
@@ -397,25 +379,6 @@
             margin-top: 20px;
         }
 
-        /* Bruce dual-boot toggle (T-Embed only) */
-        .bruce-option {
-            display: inline-flex;
-            align-items: center;
-            gap: 9px;
-            margin-top: 20px;
-            color: #999;
-            font-size: 0.85rem;
-            cursor: pointer;
-            user-select: none;
-        }
-        .bruce-option input {
-            width: 16px;
-            height: 16px;
-            accent-color: #ff8c00;
-            cursor: pointer;
-        }
-        .bruce-option strong { color: #ff8c00; font-weight: 600; }
-
         /* Screen 2: Flashing */
         .flash-info {
             color: #bbb;
@@ -608,7 +571,7 @@
                 <div class="board-icon">&#9881;</div>
                 <div class="board-info">
                     <h3>LilyGo T-Embed CC1101 & Plus</h3>
-                    <p>Sub-GHz &bull; NRF &bull; Wifi &bull; BLE &bull; NFC &bull; IR &bull; Audio &bull; FAP &bull; mJS &bull; Bruce dual-boot</p>
+                    <p>Sub-GHz &bull; NRF &bull; Wifi &bull; BLE &bull; NFC &bull; IR &bull; Audio &bull; FAP &bull; mJS</p>
                 </div>
             </div>
             <div id="board-waveshare-c6" class="board-card" onclick="selectBoard('waveshare-c6')">
@@ -640,11 +603,6 @@
         </button>
 
         <div id="connect-chip" class="chip"></div>
-
-        <label id="bruce-option" class="bruce-option" style="display:none">
-            <input type="checkbox" id="bruce-toggle" checked>
-            <span>Also flash <strong>Bruce</strong> (dual-boot)</span>
-        </label>
 
         <br>
         <button class="btn-back" onclick="goBack()">&larr; Change board</button>
@@ -680,8 +638,6 @@
         <a href="release/t-embed/latest/sdcard.zip" download class="cta-btn">
             &#11015; Download sdcard.zip <span class="cta-size">~10 MB</span>
         </a>
-
-        <p id="bruce-note" class="success-sub" style="margin-top:22px"><small style="color:#555">T-Embed: Bruce is flashed alongside &mdash; switch via the "Other OS" menu entry.</small></p>
     </div>
 </div>
 <center>
